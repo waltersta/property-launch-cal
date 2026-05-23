@@ -4,7 +4,7 @@
     "tagline": "New Listing",
     "launch_date_label": "June 1, 2026",
     "hero_image_url": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NjZ8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBsdXh1cnklMjBob21lJTIwZXh0ZXJpb3IlMjBhcmNoaXRlY3R1cmV8ZW58MHx8fHwxNzc5NTA1NzczfDA&ixlib=rb-4.1.0&q=85",
-    "header_image_url": "",
+    "header_image_url": "/header.png",
     "timezone": "America/Los_Angeles",
     "notifications_enabled": true,
     "notify_email": "walter@831.net",

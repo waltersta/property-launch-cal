@@ -10,6 +10,7 @@ from .links import ensure_pick_token
 from .models import Event, PropertyConfig, utcnow
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "seed.json"
+DEFAULT_HEADER_IMAGE_URL = "/header.png"
 
 
 def event_from_seed(data: dict) -> Event:
@@ -54,7 +55,7 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
         tagline=cfg_data.get("tagline", "New Listing"),
         launch_date_label=cfg_data.get("launch_date_label", ""),
         hero_image_url=cfg_data.get("hero_image_url", ""),
-        header_image_url=cfg_data.get("header_image_url", ""),
+        header_image_url=cfg_data.get("header_image_url", DEFAULT_HEADER_IMAGE_URL),
         timezone=cfg_data.get("timezone", "America/Los_Angeles"),
         notifications_enabled=cfg_data.get("notifications_enabled", True),
         notify_email=cfg_data.get("notify_email", ""),
@@ -101,7 +102,9 @@ def init_db(db: Session) -> None:
         if not cfg.notify_email:
             cfg.notify_email = "walter@831.net"
             cfg.notifications_enabled = True
-            db.commit()
+        if not (cfg.header_image_url or "").strip():
+            cfg.header_image_url = DEFAULT_HEADER_IMAGE_URL
+        db.commit()
         for ev in db.query(Event).filter(Event.status == "awaiting_pick").all():
             if not ev.pick_token:
                 ensure_pick_token(db, ev)
