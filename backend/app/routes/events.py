@@ -8,7 +8,7 @@ from ..database import get_db
 from ..links import ensure_pick_token
 from ..models import Event, utcnow
 from ..pick_service import apply_pick
-from ..property import assert_property_slug, get_property_config
+from ..property import require_listing_access, resolve_property
 from ..schemas import EventCreate, EventOut, EventUpdate, PickIn
 from ..seed import apply_seed
 from ..serializers import event_to_out
@@ -18,22 +18,24 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 @router.get("", response_model=list[EventOut])
 def list_events(
-    property: str | None = Query(None, description="Property slug from client URL"),
+    cfg=Depends(require_listing_access),
     db: Session = Depends(get_db),
 ):
-    assert_property_slug(get_property_config(db), property)
-    rows = db.query(Event).order_by(Event.order).all()
+    rows = db.query(Event).filter(Event.property_id == cfg.id).order_by(Event.order).all()
     return [event_to_out(e) for e in rows]
 
 
 @router.post("", response_model=EventOut)
 def create_event(
     body: EventCreate,
+    property: str | None = Query(None),
     db: Session = Depends(get_db),
     _: str = Depends(require_admin),
 ):
-    max_order = db.query(Event).count()
+    cfg = resolve_property(db, property)
+    max_order = db.query(Event).filter(Event.property_id == cfg.id).count()
     ev = Event(
+        property_id=cfg.id,
         title=body.title,
         description=body.description,
         category=body.category,
@@ -139,8 +141,15 @@ def list_views(
 
 @router.post("/reset")
 def reset_events(
+    property: str | None = Query(None),
     db: Session = Depends(get_db),
     _: str = Depends(require_admin),
 ):
+    cfg = resolve_property(db, property)
+    if cfg.id != 1:
+        raise HTTPException(
+            status_code=400,
+            detail="Reset demo only applies to the primary seeded listing (rainbow-drive).",
+        )
     apply_seed(db, preserve_passcode=True)
     return {"ok": True}

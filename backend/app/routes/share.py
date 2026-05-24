@@ -1,33 +1,44 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from ..auth import require_admin
 from ..database import get_db
+from ..auth import create_client_token, verify_client_passcode
 from ..links import ensure_pick_token, public_base_url
-from ..property import get_property_config, pick_share_path, schedule_share_path
+from ..property import get_property_config, pick_share_path, resolve_property, schedule_share_path
 from ..models import Event, PropertyConfig
 from ..notify import format_pick_date
 from ..pick_service import apply_pick
-from ..schemas import PickIn, SharePickOut
+from ..schemas import ClientAuthIn, ClientAuthOut, PickIn, SharePickOut
 from ..serializers import event_to_out
 
 router = APIRouter(prefix="/share", tags=["share"])
 
 
+@router.post("/client-auth", response_model=ClientAuthOut)
+def client_auth(body: ClientAuthIn, db: Session = Depends(get_db)):
+    cfg = resolve_property(db, body.property)
+    if verify_client_passcode(body.passcode, cfg):
+        token = create_client_token(db, cfg.id)
+        return ClientAuthOut(valid=True, client_token=token)
+    return ClientAuthOut(valid=False)
+
+
 @router.get("/links")
 def get_client_links(
     request: Request,
+    property: str | None = Query(None),
     db: Session = Depends(get_db),
     _: str = Depends(require_admin),
 ):
-    cfg = get_property_config(db)
+    cfg = resolve_property(db, property)
     base = public_base_url(request, cfg)
     slug = cfg.property_slug if cfg else "property"
     schedule_url = f"{base}{schedule_share_path(slug)}"
 
     awaiting = (
         db.query(Event)
-        .filter(Event.status == "awaiting_pick")
+        .filter(Event.status == "awaiting_pick", Event.property_id == cfg.id)
         .order_by(Event.order)
         .all()
     )

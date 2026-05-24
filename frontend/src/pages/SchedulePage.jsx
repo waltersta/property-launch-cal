@@ -14,8 +14,12 @@ import EventDialog from '@/components/schedule/EventDialog'
 import PickDateDialog from '@/components/schedule/PickDateDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientSharePanel from '@/components/schedule/ClientSharePanel'
+import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
+import ListingAdminPanel from '@/components/schedule/ListingAdminPanel'
+import NotesSection from '@/components/schedule/NotesSection'
 import PickNotifications from '@/components/schedule/PickNotifications'
-import { buildScheduleShareUrl, propertyQueryParam } from '@/lib/shareUrls'
+import { getClientToken } from '@/lib/clientAuth'
+import { buildScheduleShareUrl } from '@/lib/shareUrls'
 
 export default function SchedulePage() {
   const [searchParams, setSearchParams] = useSearchParams()
@@ -24,7 +28,9 @@ export default function SchedulePage() {
 
   const [config, setConfig] = useState(null)
   const [events, setEvents] = useState([])
+  const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [clientReady, setClientReady] = useState(false)
   const [isAdmin, setIsAdmin] = useState(() => Boolean(localStorage.getItem(ADMIN_KEY)))
   const [adminMode, setAdminMode] = useState(false)
   const [unlockOpen, setUnlockOpen] = useState(false)
@@ -34,23 +40,40 @@ export default function SchedulePage() {
   const [pickOpen, setPickOpen] = useState(false)
   const [loadError, setLoadError] = useState(null)
 
+  const loadListingData = useCallback(async (slug) => {
+    const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
+    setEvents(evs)
+    setNotes(nts)
+  }, [])
+
   const load = useCallback(async () => {
     setLoadError(null)
-    const params = propertyQueryParam(propertyParam)
     try {
-      const [cfg, evs] = await Promise.all([api.getConfig(params), api.list(params)])
+      const cfg = await api.getConfig(propertyParam || undefined)
       setConfig(cfg)
-      setEvents(evs)
+      const slug = cfg.property_slug
+      const needsClient = isShare && cfg.client_auth_required
+      const hasClient = Boolean(getClientToken(slug))
+      if (needsClient && !hasClient) {
+        setClientReady(false)
+        setEvents([])
+        setNotes([])
+        return
+      }
+      setClientReady(true)
+      await loadListingData(slug)
     } catch (err) {
       if (err.response?.status === 404) {
         setLoadError('not_found')
+      } else if (err.response?.status === 401) {
+        setClientReady(false)
       } else {
         toast.error('Could not load schedule')
       }
     } finally {
       setLoading(false)
     }
-  }, [propertyParam])
+  }, [propertyParam, isShare, loadListingData])
 
   useEffect(() => {
     setLoading(true)
@@ -159,7 +182,7 @@ export default function SchedulePage() {
         await api.update(editingEvent.id, payload)
         toast.success('Event updated')
       } else {
-        await api.create(payload)
+        await api.create(config.property_slug, payload)
         toast.success('Event created')
       }
       setEventDialogOpen(false)
@@ -197,7 +220,7 @@ export default function SchedulePage() {
   const handleReset = async () => {
     if (!window.confirm('Reset all events to demo data?')) return
     try {
-      await api.reset()
+      await api.reset(config?.property_slug)
       toast.success('Schedule reset to demo')
       load()
     } catch {
@@ -210,6 +233,26 @@ export default function SchedulePage() {
       <div className="min-h-screen flex items-center justify-center font-body text-zinc-500">
         Loading schedule…
       </div>
+    )
+  }
+
+  if (config && isShare && config.client_auth_required && !clientReady) {
+    return (
+      <ClientShareUnlockDialog
+        propertySlug={config.property_slug}
+        propertyName={config.property_name}
+        onSuccess={async () => {
+          setLoading(true)
+          setClientReady(true)
+          try {
+            await loadListingData(config.property_slug)
+          } catch {
+            toast.error('Could not load schedule')
+          } finally {
+            setLoading(false)
+          }
+        }}
+      />
     )
   }
 
@@ -261,7 +304,7 @@ export default function SchedulePage() {
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
           </p>
-          <h1 className="font-display text-3xl sm:text-4xl font-light text-white tracking-tight leading-tight">
+          <h1 className="font-property-title text-3xl sm:text-4xl text-white tracking-tight leading-tight">
             {propertyName}
           </h1>
           <p className="font-body text-white/90 mt-4 text-lg">
@@ -329,9 +372,16 @@ export default function SchedulePage() {
 
       <PickNotifications enabled={isAdmin && adminMode && !isShare} onPickReceived={load} />
 
-      {isAdmin && adminMode && !isShare && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-8">
-          <ClientSharePanel />
+      {isAdmin && adminMode && !isShare && config && (
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-8 space-y-8">
+          <ListingAdminPanel
+            propertySlug={config.property_slug}
+            propertyName={config.property_name}
+            onListingCreated={(row) => {
+              window.location.href = buildScheduleShareUrl(window.location.origin, row.property_slug)
+            }}
+          />
+          <ClientSharePanel propertySlug={config.property_slug} propertyName={config.property_name} />
         </section>
       )}
 
@@ -356,14 +406,14 @@ export default function SchedulePage() {
       )}
 
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
-        <p className="overline text-zinc-400 mb-2">01 — Calendar</p>
-        <h2 className="font-display text-3xl sm:text-4xl font-light tracking-tight mb-2">
+        <p className="section-subhead text-zinc-400 mb-2">01 — Calendar</p>
+        <h2 className="section-heading mb-2">
           {calendarMonths.length >= 2
             ? `${calendarMonths[0] && new Date(calendarMonths[0].year, calendarMonths[0].month).toLocaleString('en-US', { month: 'long' })} & ${calendarMonths[calendarMonths.length - 1] && new Date(calendarMonths[calendarMonths.length - 1].year, calendarMonths[calendarMonths.length - 1].month).toLocaleString('en-US', { month: 'long' })} ${calendarMonths[0]?.year}`
             : 'Schedule'}
         </h2>
         <p className="font-body text-zinc-500 mb-6 text-sm">
-          Click any dated cell to jump to the event in the timeline below.
+          Click any dated cell to jump to the event in the timeline.
         </p>
 
         <p className="font-body text-zinc-500 mb-6 text-sm print:hidden">
@@ -377,13 +427,32 @@ export default function SchedulePage() {
         />
       </section>
 
+      <NotesSection
+        notes={notes}
+        isAdmin={isAdmin && adminMode && !isShare}
+        onSave={async (payload, existing) => {
+          if (existing) {
+            await api.updateNote(existing.id, payload)
+            toast.success('Note updated')
+          } else {
+            await api.createNote(config.property_slug, payload)
+            toast.success('Note added')
+          }
+          await loadListingData(config.property_slug)
+        }}
+        onDelete={async (note) => {
+          if (!window.confirm('Delete this note?')) return
+          await api.deleteNote(note.id)
+          toast.success('Note deleted')
+          await loadListingData(config.property_slug)
+        }}
+      />
+
       <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-20 sm:pb-28">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <p className="overline text-zinc-400 mb-2">02 — Timeline</p>
-            <h2 className="font-display text-3xl sm:text-4xl font-light tracking-tight">
-              Prepare for market
-            </h2>
+            <p className="section-subhead text-zinc-400 mb-2">03 — Timeline</p>
+            <h2 className="section-heading">Prepare for market</h2>
           </div>
           <a href="#top" className="text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-950">
             Back to top

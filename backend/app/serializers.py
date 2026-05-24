@@ -1,10 +1,12 @@
-from .models import Event, PropertyConfig
-from .schemas import ConfigOut, EventOut
+from .models import Event, PropertyConfig, ScheduleNote
+from .property import client_auth_required
+from .schemas import ConfigOut, EventOut, NoteOut
 
 
 def config_to_out(cfg: PropertyConfig) -> ConfigOut:
     return ConfigOut(
         property_slug=cfg.property_slug or "property",
+        client_auth_required=client_auth_required(cfg),
         property_name=cfg.property_name,
         tagline=cfg.tagline,
         launch_date_label=cfg.launch_date_label,
@@ -44,4 +46,17 @@ def event_to_out(ev: Event) -> EventOut:
         pick_token_created_at=ev.pick_token_created_at,
         created_at=ev.created_at,
         updated_at=ev.updated_at,
+    )
+
+
+def note_to_out(note: ScheduleNote) -> NoteOut:
+    return NoteOut(
+        id=note.id,
+        order=note.order,
+        recorded_at=note.recorded_at,
+        responsible_party=note.responsible_party,
+        status=note.status,
+        description=note.description,
+        created_at=note.created_at,
+        updated_at=note.updated_at,
     )

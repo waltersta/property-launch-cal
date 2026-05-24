@@ -6,7 +6,7 @@ from fastapi import Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
 from .database import get_db
-from .models import AdminToken, PropertyConfig
+from .models import AdminToken, ClientToken, PropertyConfig
 
 
 def hash_passcode(passcode: str) -> str:
@@ -38,6 +38,29 @@ def create_admin_token(db: Session) -> str:
     db.add(AdminToken(token=token))
     db.commit()
     return token
+
+
+def create_client_token(db: Session, property_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    db.add(ClientToken(token=token, property_id=property_id))
+    db.commit()
+    return token
+
+
+def verify_client_passcode(passcode: str, cfg: PropertyConfig) -> bool:
+    if not cfg.client_passcode_hash:
+        return True
+    return verify_passcode(passcode, cfg.client_passcode_hash)
+
+
+def set_client_passcode(cfg: PropertyConfig, passcode: str | None) -> None:
+    if passcode is None:
+        return
+    trimmed = passcode.strip()
+    if not trimmed:
+        cfg.client_passcode_hash = ""
+    else:
+        cfg.client_passcode_hash = hash_passcode(trimmed)
 
 
 def require_admin(

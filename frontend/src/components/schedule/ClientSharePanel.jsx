@@ -13,20 +13,21 @@ async function copyText(url, label) {
   }
 }
 
-export default function ClientSharePanel() {
+export default function ClientSharePanel({ propertySlug, propertyName }) {
   const [links, setLinks] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
+    if (!propertySlug) return
     try {
-      const data = await api.getClientLinks()
+      const data = await api.getClientLinks(propertySlug)
       setLinks(data)
     } catch {
       toast.error('Could not load client links')
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [propertySlug])
 
   useEffect(() => {
     load()
@@ -49,7 +50,7 @@ export default function ClientSharePanel() {
       <div>
         <p className="overline text-zinc-500 mb-1">Send to client</p>
         <h3 className="font-display text-2xl font-light tracking-tight text-zinc-950">
-          Share links for Rainbow Drive
+          Share links for {propertyName || 'this listing'}
         </h3>
         <p className="font-body text-sm text-zinc-600 mt-2 max-w-2xl">
           Send the <strong>schedule link</strong> for full review, or the <strong>pick-a-date link</strong> if you only

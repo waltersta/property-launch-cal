@@ -35,7 +35,7 @@ export default function MonthCalendar({ year, month, events, onSelectDate }) {
 
   return (
     <div className="month-calendar">
-      <h3 className="font-display text-xl font-light tracking-tight mb-3 print:text-lg">
+      <h3 className="font-sans text-xl font-medium tracking-tight mb-3 print:text-lg">
         {MONTHS[month]} {year}
       </h3>
       <div className="grid grid-cols-7 gap-px bg-zinc-200 border border-zinc-200 print:text-[10px]">

@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 
 class ConfigOut(BaseModel):
     property_slug: str
+    client_auth_required: bool = False
     property_name: str
     tagline: str
     launch_date_label: str
@@ -21,6 +22,7 @@ class ConfigOut(BaseModel):
 
 class ConfigUpdate(BaseModel):
     property_slug: str | None = None
+    client_passcode: str | None = None
     property_name: str | None = None
     tagline: str | None = None
     launch_date_label: str | None = None
@@ -116,4 +118,56 @@ class PickIn(BaseModel):
 
 class SharePickOut(BaseModel):
     event: EventOut
+    property_name: str
+
+
+class NoteOut(BaseModel):
+    id: str
+    order: int
+    recorded_at: str
+    responsible_party: str
+    status: str
+    description: str
+    created_at: str
+    updated_at: str
+
+    model_config = {"from_attributes": True}
+
+
+class NoteCreate(BaseModel):
+    recorded_at: str | None = None
+    responsible_party: str = ""
+    status: str = "Open"
+    description: str = ""
+    order: int | None = None
+
+
+class NoteUpdate(BaseModel):
+    recorded_at: str | None = None
+    responsible_party: str | None = None
+    status: str | None = None
+    description: str | None = None
+    order: int | None = None
+
+
+class ClientAuthIn(BaseModel):
+    property: str
+    passcode: str
+
+
+class ClientAuthOut(BaseModel):
+    valid: bool
+    client_token: str | None = None
+
+
+class PropertyCreate(BaseModel):
+    property_name: str
+    property_slug: str | None = None
+    tagline: str = "New Listing"
+    client_passcode: str | None = None
+
+
+class PropertySummary(BaseModel):
+    id: int
+    property_slug: str
     property_name: str

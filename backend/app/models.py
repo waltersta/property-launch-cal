@@ -30,12 +30,14 @@ class PropertyConfig(Base):
     calendar_month_start: Mapped[int] = mapped_column(Integer, default=4)
     calendar_month_end: Mapped[int] = mapped_column(Integer, default=5)
     admin_passcode_hash: Mapped[str] = mapped_column(String(255), default="")
+    client_passcode_hash: Mapped[str] = mapped_column(String(255), default="")
 
 
 class Event(Base):
     __tablename__ = "events"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    property_id: Mapped[int] = mapped_column(Integer, default=1, index=True)
     order: Mapped[int] = mapped_column(Integer, default=0)
     title: Mapped[str] = mapped_column(String(255))
     description: Mapped[str] = mapped_column(Text, default="")
@@ -79,6 +81,28 @@ class Event(Base):
     @pick_history.setter
     def pick_history(self, value: list | None):
         self.pick_history_json = json.dumps(value or [])
+
+
+class ScheduleNote(Base):
+    __tablename__ = "schedule_notes"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    property_id: Mapped[int] = mapped_column(Integer, index=True)
+    order: Mapped[int] = mapped_column(Integer, default=0)
+    recorded_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
+    responsible_party: Mapped[str] = mapped_column(String(255), default="")
+    status: Mapped[str] = mapped_column(String(64), default="Open")
+    description: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
+    updated_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
+
+
+class ClientToken(Base):
+    __tablename__ = "client_tokens"
+
+    token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    property_id: Mapped[int] = mapped_column(Integer, index=True)
+    created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
 
 
 class AdminToken(Base):

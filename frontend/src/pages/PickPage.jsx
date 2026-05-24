@@ -57,8 +57,8 @@ export default function PickPage() {
       <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6 text-center">
         <Toaster position="top-center" />
         <CheckCircle2 className="h-14 w-14 text-emerald-600 mb-4" />
-        <p className="overline text-zinc-400 mb-2">{data.property_name}</p>
-        <h1 className="font-display text-3xl font-light tracking-tight text-zinc-950">Thank you</h1>
+        <p className="font-property-title text-2xl sm:text-3xl text-zinc-950 mb-2">{data.property_name}</p>
+        <h1 className="section-heading text-zinc-950">Thank you</h1>
         <p className="font-body text-zinc-600 mt-4 max-w-md">
           Your choice of <strong>{formatLongDate(data.event.date)}</strong> for{' '}
           <strong>{data.event.title}</strong> has been recorded. Your agent has been notified.
@@ -71,8 +71,8 @@ export default function PickPage() {
     <div className="min-h-screen bg-zinc-50 flex flex-col items-center justify-center p-6">
       <Toaster position="top-center" />
       <div className="max-w-md text-center mb-8">
-        <p className="overline text-zinc-400 mb-2">{data.property_name}</p>
-        <h1 className="font-display text-3xl font-light tracking-tight">{data.event.title}</h1>
+        <p className="font-property-title text-2xl sm:text-3xl text-zinc-950 mb-2">{data.property_name}</p>
+        <h1 className="section-heading">{data.event.title}</h1>
         <p className="font-body text-zinc-600 mt-3 text-sm">{data.event.description}</p>
         <p className="font-body text-zinc-500 mt-2 text-xs">Choose one of the available dates below.</p>
       </div>

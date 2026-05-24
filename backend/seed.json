@@ -94,5 +94,21 @@
       "assigned_phone": null,
       "assigned_email": null
     }
+  ],
+  "notes": [
+    {
+      "order": 1,
+      "recorded_at": "2026-05-20T10:00:00+00:00",
+      "responsible_party": "Walter Stauss",
+      "status": "Open",
+      "description": "Confirm key handover date options with client."
+    },
+    {
+      "order": 2,
+      "recorded_at": "2026-05-21T14:30:00+00:00",
+      "responsible_party": "Client",
+      "status": "Waiting",
+      "description": "Awaiting client selection of May 24 or May 25."
+    }
   ]
 }

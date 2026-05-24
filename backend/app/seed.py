@@ -7,15 +7,16 @@ from sqlalchemy import text
 
 from .auth import ensure_passcode_hash
 from .links import ensure_pick_token
-from .models import Event, PropertyConfig, utcnow
+from .models import Event, PropertyConfig, ScheduleNote, utcnow
 from .property import slugify_property
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "seed.json"
 DEFAULT_HEADER_IMAGE_URL = "/header.png"
 
 
-def event_from_seed(data: dict) -> Event:
+def event_from_seed(data: dict, property_id: int = 1) -> Event:
     ev = Event(
+        property_id=property_id,
         title=data["title"],
         description=data.get("description", ""),
         category=data.get("category", "general"),
@@ -70,9 +71,21 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
     )
     db.add(cfg)
 
-    db.query(Event).delete()
+    db.query(Event).filter(Event.property_id == 1).delete()
+    db.query(ScheduleNote).filter(ScheduleNote.property_id == 1).delete()
     for item in data.get("events", []):
-        db.add(event_from_seed(item))
+        db.add(event_from_seed(item, property_id=1))
+    for item in data.get("notes", []):
+        db.add(
+            ScheduleNote(
+                property_id=1,
+                order=item.get("order", 0),
+                recorded_at=item.get("recorded_at", utcnow().isoformat()),
+                responsible_party=item.get("responsible_party", ""),
+                status=item.get("status", "Open"),
+                description=item.get("description", ""),
+            )
+        )
 
     db.commit()
     ensure_passcode_hash(db)
@@ -93,6 +106,13 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(
                 text("ALTER TABLE property_config ADD COLUMN property_slug VARCHAR(64) DEFAULT 'property'")
             )
+        if "client_passcode_hash" not in cols:
+            conn.execute(
+                text("ALTER TABLE property_config ADD COLUMN client_passcode_hash VARCHAR(255) DEFAULT ''")
+            )
+        event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
+        if "property_id" not in event_cols:
+            conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))
         conn.commit()
 
 
@@ -113,6 +133,7 @@ def init_db(db: Session) -> None:
             cfg.header_image_url = DEFAULT_HEADER_IMAGE_URL
         if not (cfg.property_slug or "").strip() or cfg.property_slug == "property":
             cfg.property_slug = slugify_property(cfg.property_name or "property")
+        db.execute(text("UPDATE events SET property_id = 1 WHERE property_id IS NULL"))
         db.commit()
         for ev in db.query(Event).filter(Event.status == "awaiting_pick").all():
             if not ev.pick_token:

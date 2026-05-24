@@ -138,7 +138,7 @@ export default function Timeline({
 
               <div className="flex items-start gap-3 mb-2">
                 <Icon className="h-5 w-5 text-zinc-400 mt-0.5 shrink-0" />
-                <h4 className="font-display text-xl sm:text-2xl font-light tracking-tight text-zinc-950">
+                <h4 className="font-sans text-xl sm:text-2xl font-medium tracking-tight text-zinc-950">
                   {timelineEventTitle(e)}
                 </h4>
               </div>
