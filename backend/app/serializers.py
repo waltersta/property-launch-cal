@@ -4,6 +4,7 @@ from .schemas import ConfigOut, EventOut
 
 def config_to_out(cfg: PropertyConfig) -> ConfigOut:
     return ConfigOut(
+        property_slug=cfg.property_slug or "property",
         property_name=cfg.property_name,
         tagline=cfg.tagline,
         launch_date_label=cfg.launch_date_label,

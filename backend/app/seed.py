@@ -8,6 +8,7 @@ from sqlalchemy import text
 from .auth import ensure_passcode_hash
 from .links import ensure_pick_token
 from .models import Event, PropertyConfig, utcnow
+from .property import slugify_property
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "seed.json"
 DEFAULT_HEADER_IMAGE_URL = "/header.png"
@@ -49,9 +50,11 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
         db.delete(existing)
         db.flush()
 
+    property_name = cfg_data.get("property_name", "Property")
     cfg = PropertyConfig(
         id=1,
-        property_name=cfg_data.get("property_name", "Property"),
+        property_slug=cfg_data.get("property_slug") or slugify_property(property_name),
+        property_name=property_name,
         tagline=cfg_data.get("tagline", "New Listing"),
         launch_date_label=cfg_data.get("launch_date_label", ""),
         hero_image_url=cfg_data.get("hero_image_url", ""),
@@ -86,6 +89,10 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN notify_email VARCHAR(255) DEFAULT ''"))
         if "public_base_url" not in cols:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN public_base_url VARCHAR(512) DEFAULT ''"))
+        if "property_slug" not in cols:
+            conn.execute(
+                text("ALTER TABLE property_config ADD COLUMN property_slug VARCHAR(64) DEFAULT 'property'")
+            )
         conn.commit()
 
 
@@ -104,6 +111,8 @@ def init_db(db: Session) -> None:
             cfg.notifications_enabled = True
         if not (cfg.header_image_url or "").strip():
             cfg.header_image_url = DEFAULT_HEADER_IMAGE_URL
+        if not (cfg.property_slug or "").strip() or cfg.property_slug == "property":
+            cfg.property_slug = slugify_property(cfg.property_name or "property")
         db.commit()
         for ev in db.query(Event).filter(Event.status == "awaiting_pick").all():
             if not ev.pick_token:

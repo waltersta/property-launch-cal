@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from ..auth import require_admin
 from ..database import get_db
 from ..links import ensure_pick_token, public_base_url
+from ..property import get_property_config, pick_share_path, schedule_share_path
 from ..models import Event, PropertyConfig
 from ..notify import format_pick_date
 from ..pick_service import apply_pick
@@ -19,9 +20,10 @@ def get_client_links(
     db: Session = Depends(get_db),
     _: str = Depends(require_admin),
 ):
-    cfg = db.get(PropertyConfig, 1)
+    cfg = get_property_config(db)
     base = public_base_url(request, cfg)
-    schedule_url = f"{base}/?view=share"
+    slug = cfg.property_slug if cfg else "property"
+    schedule_url = f"{base}{schedule_share_path(slug)}"
 
     awaiting = (
         db.query(Event)
@@ -40,7 +42,7 @@ def get_client_links(
                 "title": ev.title,
                 "pick_owner": ev.pick_owner,
                 "date_options": options,
-                "pick_url": f"{base}/pick/{token}",
+                "pick_url": f"{base}{pick_share_path(token, slug)}",
             }
         )
 

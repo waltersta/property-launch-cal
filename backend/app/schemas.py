@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 
 
 class ConfigOut(BaseModel):
+    property_slug: str
     property_name: str
     tagline: str
     launch_date_label: str
@@ -19,6 +20,7 @@ class ConfigOut(BaseModel):
 
 
 class ConfigUpdate(BaseModel):
+    property_slug: str | None = None
     property_name: str | None = None
     tagline: str | None = None
     launch_date_label: str | None = None

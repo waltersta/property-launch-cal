@@ -15,10 +15,12 @@ import PickDateDialog from '@/components/schedule/PickDateDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientSharePanel from '@/components/schedule/ClientSharePanel'
 import PickNotifications from '@/components/schedule/PickNotifications'
+import { buildScheduleShareUrl, propertyQueryParam } from '@/lib/shareUrls'
 
 export default function SchedulePage() {
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const isShare = searchParams.get('view') === 'share'
+  const propertyParam = searchParams.get('property')
 
   const [config, setConfig] = useState(null)
   const [events, setEvents] = useState([])
@@ -30,22 +32,45 @@ export default function SchedulePage() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [pickEvent, setPickEvent] = useState(null)
   const [pickOpen, setPickOpen] = useState(false)
+  const [loadError, setLoadError] = useState(null)
 
   const load = useCallback(async () => {
+    setLoadError(null)
+    const params = propertyQueryParam(propertyParam)
     try {
-      const [cfg, evs] = await Promise.all([api.getConfig(), api.list()])
+      const [cfg, evs] = await Promise.all([api.getConfig(params), api.list(params)])
       setConfig(cfg)
       setEvents(evs)
-    } catch {
-      toast.error('Could not load schedule')
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setLoadError('not_found')
+      } else {
+        toast.error('Could not load schedule')
+      }
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [propertyParam])
 
   useEffect(() => {
+    setLoading(true)
     load()
   }, [load])
+
+  useEffect(() => {
+    if (!config?.property_slug || loadError) return
+    if (isShare && propertyParam !== config.property_slug) {
+      const next = new URLSearchParams(searchParams)
+      next.set('property', config.property_slug)
+      setSearchParams(next, { replace: true })
+    }
+  }, [config, isShare, propertyParam, loadError, searchParams, setSearchParams])
+
+  useEffect(() => {
+    if (config?.property_name) {
+      document.title = `${config.property_name} · Listing Schedule`
+    }
+  }, [config?.property_name])
 
   useEffect(() => {
     if (adminMode && !isAdmin) {
@@ -99,7 +124,7 @@ export default function SchedulePage() {
   }
 
   const handleCopyShareLink = async () => {
-    const url = `${window.location.origin}/?view=share`
+    const url = buildScheduleShareUrl(window.location.origin, config?.property_slug)
     try {
       await navigator.clipboard.writeText(url)
       toast.success('Client share link copied')
@@ -184,6 +209,18 @@ export default function SchedulePage() {
     return (
       <div className="min-h-screen flex items-center justify-center font-body text-zinc-500">
         Loading schedule…
+      </div>
+    )
+  }
+
+  if (loadError === 'not_found') {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center font-body text-zinc-600">
+        <h1 className="font-display text-2xl font-light text-zinc-950 mb-2">Schedule not found</h1>
+        <p className="text-sm max-w-md">
+          No listing schedule exists for <span className="font-mono text-zinc-800">{propertyParam}</span>.
+          Check the link you received or contact your agent.
+        </p>
       </div>
     )
   }
@@ -361,6 +398,7 @@ export default function SchedulePage() {
           isAdmin={isAdmin && adminMode && !isShare}
           isShare={isShare}
           tzid={tzid}
+          propertySlug={config?.property_slug}
           onEdit={(e) => { setEditingEvent(e); setEventDialogOpen(true) }}
           onDelete={handleDelete}
           onPickRequested={(e) => { setPickEvent(e); setPickOpen(true) }}
