@@ -10,10 +10,10 @@ function adminHeaders() {
 }
 
 const api = {
-  getConfig: () => axios.get(`${API}/config`).then((r) => r.data),
+  getConfig: (params) => axios.get(`${API}/config`, { params }).then((r) => r.data),
   updateConfig: (data) =>
     axios.put(`${API}/config`, data, { headers: adminHeaders() }).then((r) => r.data),
-  list: () => axios.get(`${API}/events`).then((r) => r.data),
+  list: (params) => axios.get(`${API}/events`, { params }).then((r) => r.data),
   create: (data) =>
     axios.post(`${API}/events`, data, { headers: adminHeaders() }).then((r) => r.data),
   update: (id, data) =>

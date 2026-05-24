@@ -2,6 +2,12 @@
 
 A reusable listing launch schedule for real estate: dual-month calendar, milestone timeline, client date-picking, admin editing, and `.ics` export.
 
+From your terminal, go to the project first (adjust the path if you cloned it elsewhere):
+
+```bash
+cd ~/Projects/property-launch-cal
+```
+
 ## Deploy on Render (recommended)
 
 Everything runs as **one free Web Service** (API + UI). First deploy may take a few minutes.
@@ -9,13 +15,24 @@ Everything runs as **one free Web Service** (API + UI). First deploy may take a 
 ### 1. Push to GitHub
 
 ```bash
-cd property-launch-cal
+cd ~/Projects/property-launch-cal
 git init   # if needed
 git add .
 git commit -m "Initial commit"
 git remote add origin git@github.com:YOU/property-launch-cal.git
 git push -u origin main
 ```
+
+### Push updates (after you change the app)
+
+```bash
+cd ~/Projects/property-launch-cal
+git add .
+git commit -m "Describe your change"
+git push origin main
+```
+
+Render redeploys automatically when `main` updates.
 
 ### 2. Create a Render account
 
@@ -60,7 +77,7 @@ Add in Render environment: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD
 ### Backend
 
 ```bash
-cd backend
+cd ~/Projects/property-launch-cal/backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -70,7 +87,7 @@ ADMIN_PASSCODE=rainbow uvicorn app.main:app --reload --port 8000
 ### Frontend (hot reload)
 
 ```bash
-cd frontend
+cd ~/Projects/property-launch-cal/frontend
 npm install
 npm run dev
 ```
@@ -80,8 +97,8 @@ Open [http://localhost:5173](http://localhost:5173). API is proxied to port 8000
 ### Local production-style (single port)
 
 ```bash
-cd frontend && npm run build
-cd ../backend && source .venv/bin/activate
+cd ~/Projects/property-launch-cal/frontend && npm run build
+cd ~/Projects/property-launch-cal/backend && source .venv/bin/activate
 ADMIN_PASSCODE=rainbow uvicorn app.main:app --port 8000
 ```
 
@@ -93,8 +110,10 @@ Open [http://localhost:8000](http://localhost:8000).
 
 1. Open the schedule, toggle **Admin**, enter your passcode.
 2. In **Send to client**, copy either link:
-   - **Schedule link** — full calendar + timeline (`/?view=share`).
-   - **Pick-a-date link** — key handover date choice only (`/pick/...`).
+   - **Schedule link** — full calendar + timeline (`/?view=share&property=rainbow-drive`).
+   - **Pick-a-date link** — key handover date choice only (`/pick/...?property=rainbow-drive`).
+
+Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`). Copied links include it automatically.
 3. When the client submits a date, you see a **green banner** on the admin page (polls every ~30s). Email goes to `walter@831.net` if SMTP is configured.
 
 ## Rebrand for a new listing
@@ -125,7 +144,7 @@ Open [http://localhost:8000](http://localhost:8000).
 
 - [ ] `/api/health` returns `{"ok": true}`
 - [ ] Home page loads calendar + timeline
-- [ ] Share URL `/?view=share` hides admin controls
+- [ ] Share URL `/?view=share&property=<slug>` hides admin controls
 - [ ] Key handover shows **?** on option days until client picks
 - [ ] Pick flow sets event to `picked` with chosen date
 - [ ] Admin passcode unlocks CRUD

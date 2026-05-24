@@ -11,6 +11,7 @@ import api, { effectiveSortDate } from '@/lib/scheduleApi'
 import { displayPickOwner } from '@/lib/responsibilityColors'
 import { formatLongDate, parseISO, timelineEventTitle } from '@/lib/scheduleUtils'
 import { eventToIcs, downloadIcs, slugify } from '@/lib/ics'
+import { buildPickUrl } from '@/lib/shareUrls'
 import { Button } from '@/components/ui/button'
 
 const CAT_ICON = {
@@ -42,6 +43,7 @@ export default function Timeline({
   isAdmin,
   isShare,
   tzid,
+  propertySlug,
   onEdit,
   onDelete,
   onPickRequested,
@@ -231,7 +233,7 @@ export default function Timeline({
                     className="rounded-none text-xs"
                     onClick={async () => {
                       const { pick_token } = await api.generatePickToken(e.id)
-                      const url = `${window.location.origin}/pick/${pick_token}`
+                      const url = buildPickUrl(window.location.origin, pick_token, propertySlug)
                       await navigator.clipboard.writeText(url)
                       onChanged?.()
                     }}

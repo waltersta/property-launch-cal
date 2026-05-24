@@ -16,6 +16,7 @@ class PropertyConfig(Base):
     __tablename__ = "property_config"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    property_slug: Mapped[str] = mapped_column(String(64), default="property", index=True)
     property_name: Mapped[str] = mapped_column(String(255), default="Property")
     tagline: Mapped[str] = mapped_column(String(255), default="New Listing")
     launch_date_label: Mapped[str] = mapped_column(String(128), default="")

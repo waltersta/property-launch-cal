@@ -1,6 +1,6 @@
 import secrets
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
 from ..auth import require_admin
@@ -8,6 +8,7 @@ from ..database import get_db
 from ..links import ensure_pick_token
 from ..models import Event, utcnow
 from ..pick_service import apply_pick
+from ..property import assert_property_slug, get_property_config
 from ..schemas import EventCreate, EventOut, EventUpdate, PickIn
 from ..seed import apply_seed
 from ..serializers import event_to_out
@@ -16,7 +17,11 @@ router = APIRouter(prefix="/events", tags=["events"])
 
 
 @router.get("", response_model=list[EventOut])
-def list_events(db: Session = Depends(get_db)):
+def list_events(
+    property: str | None = Query(None, description="Property slug from client URL"),
+    db: Session = Depends(get_db),
+):
+    assert_property_slug(get_property_config(db), property)
     rows = db.query(Event).order_by(Event.order).all()
     return [event_to_out(e) for e in rows]
 
