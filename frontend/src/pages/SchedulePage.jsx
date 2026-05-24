@@ -197,15 +197,15 @@ export default function SchedulePage() {
       <Toaster position="top-center" />
 
       {config?.header_image_url && (
-        <div className="bg-white border-b border-zinc-200" data-testid="branded-header">
-          <div className="max-w-7xl mx-auto px-6 sm:px-10">
-            <img
-              src={config.header_image_url}
-              alt={propertyName}
-              className="block w-full h-auto"
-              data-testid="branded-header-img"
-            />
-          </div>
+        <div className="branded-header bg-white border-b border-zinc-200" data-testid="branded-header">
+          <img
+            src={config.header_image_url}
+            alt={propertyName}
+            className="branded-header-img"
+            width={1024}
+            height={76}
+            data-testid="branded-header-img"
+          />
         </div>
       )}
 

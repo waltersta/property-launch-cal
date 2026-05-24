@@ -174,3 +174,16 @@ body {
   background-size: cover;
   background-position: center;
 }
+
+/* Full-width banner at native aspect ratio (1024×76); no upscale past 100% width */
+.branded-header {
+  width: 100%;
+  line-height: 0;
+}
+
+.branded-header-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
