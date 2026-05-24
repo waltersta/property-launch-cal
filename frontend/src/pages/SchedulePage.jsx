@@ -257,9 +257,6 @@ export default function SchedulePage() {
         <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 pb-10 sm:pb-14 pt-24">
           <p className="overline text-white/70 mb-3">
             Listing schedule · {config?.calendar_year || new Date().getFullYear()}
-            {isShare && (
-              <span className="ml-3 border border-white/30 px-2 py-0.5">Shared client view · Read & pick only</span>
-            )}
             {!isShare && adminMode && isAdmin && (
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
