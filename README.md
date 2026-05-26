@@ -44,13 +44,11 @@ Sign up at [render.com](https://render.com) (GitHub login is fine).
 - Render reads [`render.yaml`](render.yaml): Python service, build script, health check at `/api/health`.
 - After deploy, your app URL looks like `https://property-launch-cal-xxxx.onrender.com`.
 
-### 4. Required environment variable
+### 4. Set the admin passcode
 
-In **Render → your service → Environment**:
+Sign in to admin once with the seed passcode (`rainbow` by default), then open **Listing settings → Admin passcode** and set a strong one. The new passcode is stored as a bcrypt hash on the persistent disk and applies to every listing.
 
-| Variable | Value |
-|----------|--------|
-| `ADMIN_PASSCODE` | A strong secret (not `rainbow`) |
+You can also seed the initial passcode via an `ADMIN_PASSCODE` env var on Render, but it only takes effect on the very first boot when the DB is empty — rotate from the UI after that.
 
 Copied client links use `RENDER_EXTERNAL_URL` automatically. When you add a custom subdomain later, set:
 
@@ -137,7 +135,7 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `ADMIN_PASSCODE` | `rainbow` (local only) | Admin passcode (hashed on first run) |
+| `ADMIN_PASSCODE` | `rainbow` | Seed admin passcode. Only used on first boot when the DB has no hash yet; rotate from **Listing settings → Admin passcode** after. |
 | `PUBLIC_BASE_URL` | `RENDER_EXTERNAL_URL` on Render | Base URL for copied share/pick links |
 | `RENDER_EXTERNAL_URL` | (set by Render) | Used when `PUBLIC_BASE_URL` is unset |
 | `DATABASE_URL` | local: `sqlite:///.../backend/data/schedule.db` · Render: `sqlite:////var/data/schedule.db` (on the persistent disk) | SQLAlchemy database URL |
@@ -149,6 +147,8 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 - `GET /api/events` — all milestones
 - `POST /api/events/{id}/pick` — client date selection `{ date, picked_by }`
 - `POST /api/admin/verify` — `{ passcode }` → `{ valid, admin_token }`
+- `POST /api/admin/change-passcode` — `{ new_passcode }` (admin token) — rotates the admin passcode for all listings
+- `GET /api/admin/db-download` / `POST /api/admin/db-upload` — admin-only DB backup/restore
 - Admin routes require header `X-Admin-Token`
 
 ## Verification checklist
