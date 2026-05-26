@@ -72,6 +72,11 @@ const api = {
 
   verifyAdmin: (token) => axios.post(`${API}/admin/verify`, { token }).then((r) => r.data),
 
+  changeAdminPasscode: (newPasscode) =>
+    axios
+      .post(`${API}/admin/change-passcode`, { new_passcode: newPasscode }, { headers: adminHeaders() })
+      .then((r) => r.data),
+
   verifyClient: (propertySlug, passcode) =>
     axios
       .post(`${API}/share/client-auth`, { property: propertySlug, passcode })

@@ -13,6 +13,27 @@ export default function ListingAdminPanel({ propertySlug, propertyName, onListin
   const [newSlug, setNewSlug] = useState('')
   const [newClientPass, setNewClientPass] = useState('')
   const [creating, setCreating] = useState(false)
+  const [adminPass, setAdminPass] = useState('')
+  const [adminPassConfirm, setAdminPassConfirm] = useState('')
+  const [savingAdminPass, setSavingAdminPass] = useState(false)
+
+  const adminPassMismatch = Boolean(adminPassConfirm) && adminPass !== adminPassConfirm
+  const adminPassReady = adminPass.length >= 4 && adminPass === adminPassConfirm
+
+  const saveAdminPasscode = async () => {
+    if (!adminPassReady) return
+    setSavingAdminPass(true)
+    try {
+      await api.changeAdminPasscode(adminPass)
+      toast.success('Admin passcode updated. Use it on your next sign-in.')
+      setAdminPass('')
+      setAdminPassConfirm('')
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Could not update admin passcode')
+    } finally {
+      setSavingAdminPass(false)
+    }
+  }
 
   const saveClientPasscode = async () => {
     if (!propertySlug) return
@@ -61,6 +82,46 @@ export default function ListingAdminPanel({ propertySlug, propertyName, onListin
         <p className="font-body text-sm text-zinc-600 mt-2">
           Slug in URLs: <code className="text-zinc-800">?property={propertySlug}</code>
         </p>
+      </div>
+
+      <div className="bg-white border border-zinc-200 p-5 space-y-3 max-w-lg">
+        <p className="text-xs uppercase tracking-widest text-zinc-500">Admin passcode</p>
+        <p className="text-sm text-zinc-600 font-body">
+          The passcode you enter to unlock admin mode. Minimum 4 characters. Applies to every listing on this site.
+        </p>
+        <div>
+          <Label htmlFor="admin-passcode-new">New admin passcode</Label>
+          <Input
+            id="admin-passcode-new"
+            type="password"
+            value={adminPass}
+            onChange={(e) => setAdminPass(e.target.value)}
+            className="mt-1 rounded-none"
+            autoComplete="new-password"
+          />
+        </div>
+        <div>
+          <Label htmlFor="admin-passcode-confirm">Confirm new passcode</Label>
+          <Input
+            id="admin-passcode-confirm"
+            type="password"
+            value={adminPassConfirm}
+            onChange={(e) => setAdminPassConfirm(e.target.value)}
+            className="mt-1 rounded-none"
+            autoComplete="new-password"
+          />
+          {adminPassMismatch && (
+            <p className="text-xs text-red-600 mt-1">Passcodes do not match.</p>
+          )}
+        </div>
+        <Button
+          variant="outline"
+          className="rounded-none text-xs uppercase tracking-widest"
+          disabled={savingAdminPass || !adminPassReady}
+          onClick={saveAdminPasscode}
+        >
+          Save admin passcode
+        </Button>
       </div>
 
       <div className="bg-white border border-zinc-200 p-5 space-y-3 max-w-lg">

@@ -4,11 +4,11 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from ..auth import create_admin_token, require_admin, verify_passcode
+from ..auth import create_admin_token, hash_passcode, require_admin, verify_passcode
 from ..database import DATABASE_URL, get_db
 from ..db_migrate import sqlite_target
 from ..models import PropertyConfig
-from ..schemas import AdminVerifyIn, AdminVerifyOut
+from ..schemas import AdminPasscodeChangeIn, AdminVerifyIn, AdminVerifyOut
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -22,6 +22,18 @@ def verify_admin(body: AdminVerifyIn, db: Session = Depends(get_db)):
         return AdminVerifyOut(valid=False)
     admin_token = create_admin_token(db)
     return AdminVerifyOut(valid=True, admin_token=admin_token)
+
+
+@router.post("/change-passcode", dependencies=[Depends(require_admin)])
+def change_admin_passcode(body: AdminPasscodeChangeIn, db: Session = Depends(get_db)):
+    new_hash = hash_passcode(body.new_passcode.strip())
+    rows = db.query(PropertyConfig).all()
+    if not rows:
+        raise HTTPException(status_code=404, detail="No property config to update")
+    for cfg in rows:
+        cfg.admin_passcode_hash = new_hash
+    db.commit()
+    return {"ok": True, "updated": len(rows)}
 
 
 def _live_sqlite_path() -> Path:

@@ -111,6 +111,10 @@ class AdminVerifyOut(BaseModel):
     admin_token: str | None = None
 
 
+class AdminPasscodeChangeIn(BaseModel):
+    new_passcode: str = Field(min_length=4, max_length=128)
+
+
 class PickIn(BaseModel):
     date: str
     picked_by: str
