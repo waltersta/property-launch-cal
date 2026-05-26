@@ -4,14 +4,20 @@ services:
   - type: web
     name: property-launch-cal
     runtime: python
-    plan: free
+    plan: starter
     rootDir: backend
     buildCommand: bash ../scripts/render-build.sh
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /api/health
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.0"
+      - key: DATABASE_URL
+        value: sqlite:////var/data/schedule.db
       # Set a strong secret in the Render dashboard (required for production):
       # - key: ADMIN_PASSCODE
       #   sync: false

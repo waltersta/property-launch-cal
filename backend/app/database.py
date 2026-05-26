@@ -4,10 +4,14 @@ from pathlib import Path
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, sessionmaker
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "schedule.db"
-DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+from .db_migrate import migrate_database
 
-DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DB_PATH}")
+LEGACY_DB_PATH = Path(__file__).resolve().parent.parent / "data" / "schedule.db"
+LEGACY_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{LEGACY_DB_PATH}")
+
+migrate_database(DATABASE_URL, legacy_path=LEGACY_DB_PATH)
 
 engine = create_engine(
     DATABASE_URL,

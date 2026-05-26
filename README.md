@@ -10,7 +10,7 @@ cd ~/Projects/property-launch-cal
 
 ## Deploy on Render (recommended)
 
-Everything runs as **one free Web Service** (API + UI). First deploy may take a few minutes.
+Everything runs as **one Web Service** (API + UI) on Render's Starter plan — no spin-down, no cold starts. First deploy may take a few minutes.
 
 ### 1. Push to GitHub
 
@@ -64,7 +64,18 @@ Copied client links use `RENDER_EXTERNAL_URL` automatically. When you add a cust
 2. Toggle **Admin** → enter passcode.
 3. **Send to client** → copy **Schedule link** or **Pick-a-date link**.
 
-**Free tier:** the service **spins down** after idle; the first visit may take 30–60 seconds. SQLite data usually persists but can reset on **redeploy** — use **Reset demo** if needed.
+**Starter plan + persistent disk:** the service stays running and client picks survive redeploys (SQLite lives on a 1 GB disk mounted at `/var/data`). Use **Reset demo** any time you want a clean slate.
+
+### Migrating existing data onto the disk (one-time)
+
+If you already have client picks in your running Render service, save them **before** the disk-enabling deploy:
+
+1. While the current (no-disk) service is still running, hit `GET /api/admin/db-download` with your admin token (e.g. in the browser DevTools or `curl -H "X-Admin-Token: $TOKEN" .../api/admin/db-download -o schedule.db`). Save `schedule.db` locally.
+2. Push the disk change and wait for the new deploy to finish.
+3. Restore: `curl -H "X-Admin-Token: $TOKEN" -F "file=@schedule.db" .../api/admin/db-upload`. This stages the file at `/var/data/migrate.db`.
+4. Trigger a manual redeploy (Render dashboard → **Manual Deploy**). On boot the app auto-promotes `migrate.db` → `schedule.db`.
+
+Auto-promotion is idempotent: once `schedule.db` exists with data, subsequent boots leave it alone.
 
 ### Optional: email when client picks
 
@@ -129,7 +140,7 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 | `ADMIN_PASSCODE` | `rainbow` (local only) | Admin passcode (hashed on first run) |
 | `PUBLIC_BASE_URL` | `RENDER_EXTERNAL_URL` on Render | Base URL for copied share/pick links |
 | `RENDER_EXTERNAL_URL` | (set by Render) | Used when `PUBLIC_BASE_URL` is unset |
-| `DATABASE_URL` | `sqlite:///.../backend/data/schedule.db` | SQLAlchemy database URL |
+| `DATABASE_URL` | local: `sqlite:///.../backend/data/schedule.db` · Render: `sqlite:////var/data/schedule.db` (on the persistent disk) | SQLAlchemy database URL |
 | `VITE_BACKEND_URL` | empty | Leave empty on Render (same-origin `/api`) |
 
 ## API overview
