@@ -1,18 +1,43 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { Copy, Link2, Mail } from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/lib/scheduleApi'
-import { buildScheduleShareUrl } from '@/lib/shareUrls'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export default function ListingAdminPanel({ propertySlug, propertyName, onListingCreated }) {
+async function copyText(url, label) {
+  try {
+    await navigator.clipboard.writeText(url)
+    toast.success(`${label} copied`)
+  } catch {
+    window.prompt(`Copy this link:`, url)
+  }
+}
+
+export default function ListingAdminPanel({ propertySlug, propertyName }) {
   const [clientPasscode, setClientPasscode] = useState('')
   const [savingPasscode, setSavingPasscode] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newSlug, setNewSlug] = useState('')
-  const [newClientPass, setNewClientPass] = useState('')
-  const [creating, setCreating] = useState(false)
+  const [links, setLinks] = useState(null)
+  const [linksLoading, setLinksLoading] = useState(true)
+
+  const loadLinks = useCallback(async () => {
+    if (!propertySlug) return
+    setLinksLoading(true)
+    try {
+      const data = await api.getClientLinks(propertySlug)
+      setLinks(data)
+    } catch {
+      toast.error('Could not load client links')
+      setLinks(null)
+    } finally {
+      setLinksLoading(false)
+    }
+  }, [propertySlug])
+
+  useEffect(() => {
+    loadLinks()
+  }, [loadLinks])
 
   const saveClientPasscode = async () => {
     if (!propertySlug) return
@@ -28,104 +53,97 @@ export default function ListingAdminPanel({ propertySlug, propertyName, onListin
     }
   }
 
-  const createListing = async (e) => {
-    e.preventDefault()
-    if (!newName.trim()) return
-    setCreating(true)
-    try {
-      const row = await api.createProperty({
-        property_name: newName.trim(),
-        property_slug: newSlug.trim() || undefined,
-        client_passcode: newClientPass.trim() || undefined,
-      })
-      const url = buildScheduleShareUrl(window.location.origin, row.property_slug)
-      toast.success(`Listing created. Share: ${url}`)
-      setNewName('')
-      setNewSlug('')
-      setNewClientPass('')
-      onListingCreated?.(row)
-    } catch (err) {
-      toast.error(err.response?.data?.detail || 'Could not create listing')
-    } finally {
-      setCreating(false)
-    }
-  }
+  const pick = links?.pick_links?.[0]
 
   return (
-    <div className="border border-zinc-200 bg-zinc-50 p-6 sm:p-8 space-y-8" data-testid="listing-admin-panel">
-      <div>
-        <p className="overline text-zinc-500 mb-1">Listing settings</p>
-        <h3 className="font-display text-2xl font-light tracking-tight text-zinc-950">
-          {propertyName || 'This listing'}
-        </h3>
-        <p className="font-body text-sm text-zinc-600 mt-2">
-          Slug in URLs: <code className="text-zinc-800">?property={propertySlug}</code>
-        </p>
+    <div className="border border-zinc-200 bg-zinc-50 p-4 sm:p-5" data-testid="listing-admin-panel">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
+        <div>
+          <p className="overline text-zinc-500 mb-0.5">Listing admin</p>
+          <h3 className="font-display text-xl font-light tracking-tight text-zinc-950">
+            {propertyName || 'This listing'}
+          </h3>
+        </div>
+        <code className="text-xs text-zinc-500 font-mono">?property={propertySlug}</code>
       </div>
 
-      <div className="bg-white border border-zinc-200 p-5 space-y-3 max-w-lg">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Client passcode (share link)</p>
-        <p className="text-sm text-zinc-600 font-body">
-          When set, clients must enter this passcode before viewing the schedule. Leave blank and save to remove
-          protection.
-        </p>
-        <div>
-          <Label htmlFor="client-passcode-set">New client passcode</Label>
-          <Input
-            id="client-passcode-set"
-            type="password"
-            value={clientPasscode}
-            onChange={(e) => setClientPasscode(e.target.value)}
-            className="mt-1 rounded-none"
-            placeholder="Set or leave empty to clear"
-          />
+      <div className="grid md:grid-cols-2 gap-4">
+        <div className="bg-white border border-zinc-200 p-4 space-y-3">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client passcode</p>
+          <p className="text-sm text-zinc-600 font-body leading-snug">
+            Optional lock on the share link. Save blank to remove.
+          </p>
+          <div>
+            <Label htmlFor="client-passcode-set" className="sr-only">
+              New client passcode
+            </Label>
+            <Input
+              id="client-passcode-set"
+              type="password"
+              value={clientPasscode}
+              onChange={(e) => setClientPasscode(e.target.value)}
+              className="rounded-none"
+              placeholder="Set or leave empty to clear"
+            />
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-none text-xs uppercase tracking-widest"
+            disabled={savingPasscode}
+            onClick={saveClientPasscode}
+          >
+            Save passcode
+          </Button>
         </div>
-        <Button
-          variant="outline"
-          className="rounded-none text-xs uppercase tracking-widest"
-          disabled={savingPasscode}
-          onClick={saveClientPasscode}
-        >
-          Save client passcode
-        </Button>
-      </div>
 
-      <form onSubmit={createListing} className="bg-white border border-zinc-200 p-5 space-y-3 max-w-lg">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Add another listing</p>
-        <div>
-          <Label htmlFor="new-property-name">Property name</Label>
-          <Input
-            id="new-property-name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            className="mt-1 rounded-none"
-            placeholder="123 Oak Street"
-          />
+        <div className="bg-white border border-zinc-200 p-4 space-y-3">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Send to client</p>
+          {linksLoading ? (
+            <p className="text-sm text-zinc-500 font-body">Loading links…</p>
+          ) : links ? (
+            <>
+              <div className="space-y-2">
+                <p className="text-xs text-zinc-600 font-body">Full schedule</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none w-full text-xs uppercase tracking-widest"
+                  onClick={() => copyText(links.schedule_url, 'Schedule link')}
+                >
+                  <Link2 className="h-3.5 w-3.5 mr-1.5" />
+                  Copy schedule link
+                </Button>
+              </div>
+              {pick ? (
+                <div className="space-y-2 pt-2 border-t border-zinc-100">
+                  <p className="text-xs text-zinc-600 font-body">
+                    Pick-a-date · <strong>{pick.title}</strong>
+                  </p>
+                  <Button
+                    size="sm"
+                    className="rounded-none w-full text-xs uppercase tracking-widest"
+                    onClick={() => copyText(pick.pick_url, 'Pick-a-date link')}
+                  >
+                    <Copy className="h-3.5 w-3.5 mr-1.5" />
+                    Copy pick link
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 font-body">No date-pick events right now.</p>
+              )}
+              {links.notifications_enabled && links.notify_email && (
+                <p className="flex items-center gap-1.5 text-[0.65rem] text-zinc-500 font-body pt-1">
+                  <Mail className="h-3.5 w-3.5 shrink-0" />
+                  Picks notify {links.notify_email}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-zinc-500 font-body">Links unavailable.</p>
+          )}
         </div>
-        <div>
-          <Label htmlFor="new-property-slug">URL slug (optional)</Label>
-          <Input
-            id="new-property-slug"
-            value={newSlug}
-            onChange={(e) => setNewSlug(e.target.value)}
-            className="mt-1 rounded-none"
-            placeholder="123-oak-street"
-          />
-        </div>
-        <div>
-          <Label htmlFor="new-client-pass">Client passcode (optional)</Label>
-          <Input
-            id="new-client-pass"
-            type="password"
-            value={newClientPass}
-            onChange={(e) => setNewClientPass(e.target.value)}
-            className="mt-1 rounded-none"
-          />
-        </div>
-        <Button type="submit" className="rounded-none text-xs uppercase tracking-widest" disabled={creating}>
-          Create listing
-        </Button>
-      </form>
+      </div>
     </div>
   )
 }

@@ -2,17 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Download, Link2, Plus, RotateCcw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import {
-  DndContext,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
-import { eventDisplayName, formatDateTime, formatLongDate } from '@/lib/scheduleUtils'
+import { useCalendarDrag } from '@/lib/useCalendarDrag'
+import {
+  eventDisplayName,
+  formatDateTime,
+  formatLongDate,
+  sharpImageUrl,
+} from '@/lib/scheduleUtils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import CalendarStack from '@/components/schedule/CalendarStack'
@@ -21,8 +20,8 @@ import EventDialog from '@/components/schedule/EventDialog'
 import PickDateDialog from '@/components/schedule/PickDateDialog'
 import RescheduleDialog from '@/components/schedule/RescheduleDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
-import ClientSharePanel from '@/components/schedule/ClientSharePanel'
 import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
+import CreateListingDialog from '@/components/schedule/CreateListingDialog'
 import ListingAdminPanel from '@/components/schedule/ListingAdminPanel'
 import NotesSection from '@/components/schedule/NotesSection'
 import PickNotifications from '@/components/schedule/PickNotifications'
@@ -50,6 +49,8 @@ export default function SchedulePage() {
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [loadError, setLoadError] = useState(null)
   const [lastLoadedAt, setLastLoadedAt] = useState(null)
+  const [createListingOpen, setCreateListingOpen] = useState(false)
+  const [headerImgFailed, setHeaderImgFailed] = useState(false)
 
   const loadListingData = useCallback(async (slug) => {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
@@ -106,6 +107,10 @@ export default function SchedulePage() {
       document.title = `${config.property_name} · Listing Schedule`
     }
   }, [config?.property_name])
+
+  useEffect(() => {
+    setHeaderImgFailed(false)
+  }, [config?.property_slug, config?.header_image_url])
 
   useEffect(() => {
     if (adminMode && !isAdmin) {
@@ -176,16 +181,20 @@ export default function SchedulePage() {
     toast.success('Schedule downloaded (.ics)')
   }
 
-  const handleSelectDate = (iso, dayEvents) => {
-    if (!dayEvents?.length) return
-    const target = dayEvents[0]
-    const el = document.getElementById(`event-${target.id}`)
+  const scrollToEvent = useCallback((event) => {
+    if (!event?.id) return
+    const el = document.getElementById(`event-${event.id}`)
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'start' })
       el.classList.remove('timeline-flash')
       void el.offsetWidth
       el.classList.add('timeline-flash')
     }
+  }, [])
+
+  const handleSelectDate = (iso, dayEvents) => {
+    if (!dayEvents?.length) return
+    scrollToEvent(dayEvents[0])
   }
 
   const handleSaveEvent = async (payload) => {
@@ -240,14 +249,7 @@ export default function SchedulePage() {
     }
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
-  )
-
-  const handleDragEnd = (e) => {
-    const ev = e.active?.data?.current?.event
-    const targetIso = e.over?.data?.current?.iso
+  const handleDrop = useCallback((ev, targetIso) => {
     if (!ev || !targetIso) return
     if (ev.status === 'awaiting_pick') {
       toast.info('Confirm a pick before rescheduling this event.')
@@ -256,7 +258,10 @@ export default function SchedulePage() {
     if (ev.date === targetIso) return
     setRescheduleEvent(ev)
     setRescheduleTarget(targetIso)
-  }
+  }, [])
+
+  const canDragCalendar = isAdmin && adminMode && !isShare
+  const calendarDrag = useCalendarDrag({ enabled: canDragCalendar, onDrop: handleDrop })
 
   const handleRescheduleConfirm = async ({ date, end_date, time }) => {
     if (!rescheduleEvent) return
@@ -270,8 +275,6 @@ export default function SchedulePage() {
       toast.error('Could not reschedule')
     }
   }
-
-  const canDragCalendar = isAdmin && adminMode && !isShare
 
   if (loading) {
     return (
@@ -321,14 +324,16 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-white" id="top">
       <Toaster position="top-center" />
 
-      {config?.header_image_url && (
-        <div className="branded-header bg-white border-b border-zinc-200" data-testid="branded-header">
+      {config?.header_image_url && !headerImgFailed && (
+        <div className="branded-header border-b border-zinc-200" data-testid="branded-header">
           <img
-            src={config.header_image_url}
+            src={sharpImageUrl(config.header_image_url, 2048)}
             alt={propertyName}
             className="branded-header-img"
             width={1024}
             height={76}
+            decoding="sync"
+            onError={() => setHeaderImgFailed(true)}
             data-testid="branded-header-img"
           />
         </div>
@@ -338,7 +343,7 @@ export default function SchedulePage() {
         className="relative min-h-[280px] sm:min-h-[360px] flex items-end hero-bg"
         style={{
           backgroundImage: config?.hero_image_url
-            ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url("${config.hero_image_url}")`
+            ? `linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.45)), url("${sharpImageUrl(config.hero_image_url)}")`
             : 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.5))',
         }}
       >
@@ -400,6 +405,14 @@ export default function SchedulePage() {
                   <RotateCcw className="h-4 w-4 mr-1" />
                   Reset demo
                 </Button>
+                <Button
+                  variant="outline"
+                  className="rounded-none text-xs uppercase tracking-widest"
+                  onClick={() => setCreateListingOpen(true)}
+                >
+                  <Plus className="h-4 w-4 mr-1" />
+                  New listing
+                </Button>
               </>
             )}
           </div>
@@ -418,17 +431,22 @@ export default function SchedulePage() {
       <PickNotifications enabled={isAdmin && adminMode && !isShare} onPickReceived={load} />
 
       {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-8 space-y-8">
-          <ListingAdminPanel
-            propertySlug={config.property_slug}
-            propertyName={config.property_name}
-            onListingCreated={(row) => {
-              window.location.href = buildScheduleShareUrl(window.location.origin, row.property_slug)
-            }}
-          />
-          <ClientSharePanel propertySlug={config.property_slug} propertyName={config.property_name} />
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-4 pb-2">
+          <ListingAdminPanel propertySlug={config.property_slug} propertyName={config.property_name} />
         </section>
       )}
+
+      <CreateListingDialog
+        open={createListingOpen}
+        onOpenChange={setCreateListingOpen}
+        onCreated={(row) => {
+          const next = new URLSearchParams(searchParams)
+          next.delete('view')
+          next.set('property', row.property_slug)
+          setSearchParams(next, { replace: true })
+          setAdminMode(true)
+        }}
+      />
 
       {isShare && awaitingPickEvent && (
         <div className="bg-amber-50 border-b border-amber-200">
@@ -451,12 +469,14 @@ export default function SchedulePage() {
       )}
 
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
-        <p className="section-subhead text-zinc-400 mb-2">01 — Calendar</p>
         {lastLoadedAt && (
-          <p className="font-body text-xs uppercase tracking-widest text-zinc-400 mb-2">
-            As of {formatDateTime(lastLoadedAt)}
-          </p>
+          <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400">
+            <p className="font-body text-sm font-bold text-zinc-950 tracking-tight">
+              As of {formatDateTime(lastLoadedAt)}
+            </p>
+          </div>
         )}
+        <p className="section-subhead text-zinc-400 mb-2">01 — Calendar</p>
         <h2 className="section-heading mb-2">
           {calendarMonths.length >= 2
             ? `${calendarMonths[0] && new Date(calendarMonths[0].year, calendarMonths[0].month).toLocaleString('en-US', { month: 'long' })} & ${calendarMonths[calendarMonths.length - 1] && new Date(calendarMonths[calendarMonths.length - 1].year, calendarMonths[calendarMonths.length - 1].month).toLocaleString('en-US', { month: 'long' })} ${calendarMonths[0]?.year}`
@@ -472,18 +492,19 @@ export default function SchedulePage() {
 
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
-            Tip: drag any event chip onto another day to reschedule it (long-press on touch devices).
+            Hover an event for details. Double-click to jump to the timeline. Press and drag a chip to
+            another day (long-press on touch).
           </p>
         )}
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <CalendarStack
-            months={calendarMonths}
-            events={events}
-            onSelectDate={handleSelectDate}
-            draggable={canDragCalendar}
-          />
-        </DndContext>
+        <CalendarStack
+          months={calendarMonths}
+          events={events}
+          onSelectDate={handleSelectDate}
+          draggable={canDragCalendar}
+          drag={calendarDrag}
+          onScrollToEvent={scrollToEvent}
+        />
       </section>
 
       <NotesSection
