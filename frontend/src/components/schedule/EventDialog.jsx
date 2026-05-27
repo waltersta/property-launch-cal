@@ -237,7 +237,7 @@ export default function EventDialog({
                 <Input type="time" value={form.time || ''} onChange={(e) => update('time', e.target.value)} className="rounded-none mt-1" />
               </div>
               <div>
-                <Label>End time</Label>
+                <Label>End time (optional)</Label>
                 <Input type="time" value={form.end_time || ''} onChange={(e) => update('end_time', e.target.value)} className="rounded-none mt-1" />
               </div>
             </div>

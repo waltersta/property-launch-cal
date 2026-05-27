@@ -5,7 +5,7 @@ import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
-import { agentDisplayName, clientNamesLabel, normalizeListingParties } from '@/lib/listingParties'
+import { normalizeListingParties } from '@/lib/listingParties'
 import { useCalendarDrag } from '@/lib/useCalendarDrag'
 import {
   eventDisplayName,
@@ -471,17 +471,6 @@ export default function SchedulePage() {
 
       <PickNotifications enabled={isAdmin && adminMode && !isShare} onPickReceived={load} />
 
-      {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-4 pb-2">
-          <ListingAdminPanel
-            propertySlug={config.property_slug}
-            propertyName={config.property_name}
-            listingParties={listingParties}
-            onPartiesSaved={load}
-          />
-        </section>
-      )}
-
       <CreateListingDialog
         open={createListingOpen}
         onOpenChange={setCreateListingOpen}
@@ -533,8 +522,8 @@ export default function SchedulePage() {
         </p>
 
         <p className="font-body text-zinc-500 mb-6 text-sm print:hidden">
-          Colors show who must be on site (legend under each month). Split = {agentDisplayName(listingParties)} and{' '}
-          {clientNamesLabel(listingParties)} for key handover. ? = client still choosing a date.
+          Colors show who must be on site (legend under each month).
+          {stats.awaiting > 0 && ' ? = a client is still choosing a date.'}
         </p>
 
         {canDragCalendar && (
@@ -604,6 +593,17 @@ export default function SchedulePage() {
         />
       </section>
 
+      {isAdmin && adminMode && !isShare && config && (
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-12 sm:pb-16">
+          <ListingAdminPanel
+            propertySlug={config.property_slug}
+            propertyName={config.property_name}
+            listingParties={listingParties}
+            onPartiesSaved={load}
+          />
+        </section>
+      )}
+
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 font-body">
         <p>
           {propertyName} · Listing schedule · {config?.calendar_year || ''}
@@ -611,7 +611,7 @@ export default function SchedulePage() {
         <p className="mt-1 text-xs">
           {isShare
             ? 'Shared client view — pick your date when prompted.'
-            : 'Toggle Admin → copy client links under “Send to client”. You are notified when a date is picked.'}
+            : 'Toggle Admin → listing settings and client links are at the bottom of the page.'}
         </p>
       </footer>
 
