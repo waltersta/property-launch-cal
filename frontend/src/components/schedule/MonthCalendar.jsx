@@ -1,4 +1,3 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { Lock } from 'lucide-react'
 import {
   HOLIDAYS,
@@ -16,46 +15,32 @@ function cellLabel(e) {
   return short.length > 22 ? `${short.slice(0, 20)}…` : short
 }
 
-function StaticEventChip({ event }) {
+function EventChip({ event, isoForCell, drag }) {
   const { style, awaiting } = getEventChipPresentation(event)
   const isAdminOnly = event.visibility === 'admin_only'
-  return (
-    <div
-      className="cal-event-chip font-cal-narrow truncate"
-      style={style}
-      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
-    >
-      {awaiting && <span className="cal-event-q">?</span>}
-      {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
-      {cellLabel(event)}
-    </div>
-  )
-}
-
-function DraggableEventChip({ event, isoForCell }) {
-  const dragId = `event:${event.id}:${isoForCell}`
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: dragId,
-    data: { event, sourceIso: isoForCell, type: 'event' },
-  })
-  const { style, awaiting } = getEventChipPresentation(event)
-  const isAdminOnly = event.visibility === 'admin_only'
+  const draggable = Boolean(drag)
+  const isDragging = draggable && drag.draggingId === event.id
 
   const merged = {
     ...style,
-    cursor: 'grab',
     opacity: isDragging ? 0.4 : 1,
-    touchAction: 'none',
+    ...(draggable
+      ? { cursor: 'grab', touchAction: 'none', userSelect: 'none' }
+      : {}),
   }
+
+  const handlePointerDown = draggable
+    ? (e) => drag.startDrag(e, event, isoForCell)
+    : undefined
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
       className="cal-event-chip font-cal-narrow truncate"
       style={merged}
       title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
+      role={draggable ? 'button' : undefined}
+      aria-roledescription={draggable ? 'draggable' : undefined}
+      onPointerDown={handlePointerDown}
     >
       {awaiting && <span className="cal-event-q">?</span>}
       {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
@@ -64,14 +49,9 @@ function DraggableEventChip({ event, isoForCell }) {
   )
 }
 
-function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, draggable, children }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `day:${iso}`,
-    data: { iso, type: 'day' },
-    disabled: !draggable,
-  })
-
+function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, draggable, drag, children }) {
   const interactive = hasEvents || draggable
+  const isOver = draggable && drag?.overIso === iso
 
   const baseClass = `cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
     inMonth ? 'bg-white' : 'bg-zinc-50/80'
@@ -90,13 +70,12 @@ function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, dragga
     }
   }
 
-  // Render as <div role="button"> instead of <button> so draggable chips
-  // (which dnd-kit gives role="button") aren't nested inside a real button.
-  // Nesting interactive elements is invalid HTML and breaks pointer-event
-  // libraries like dnd-kit on some browsers.
+  // <div role="button"> instead of <button> so we can place draggable chips
+  // (also role="button") inside without the invalid HTML / pointer-event
+  // interference that broke @dnd-kit.
   return (
     <div
-      ref={setNodeRef}
+      data-day-iso={iso}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : -1}
       aria-disabled={!interactive}
@@ -109,8 +88,9 @@ function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, dragga
   )
 }
 
-export default function MonthCalendar({ year, month, events, onSelectDate, draggable = false }) {
+export default function MonthCalendar({ year, month, events, onSelectDate, draggable = false, drag = null }) {
   const cells = buildMonthGrid(year, month)
+  const activeDrag = draggable ? drag : null
 
   return (
     <div className="month-calendar">
@@ -143,6 +123,7 @@ export default function MonthCalendar({ year, month, events, onSelectDate, dragg
               awaiting={awaiting}
               onClick={onSelectDate}
               draggable={draggable}
+              drag={activeDrag}
             >
               <div className="cal-day-header">
                 <span className={`cal-day-num ${inMonth ? 'text-zinc-950' : 'text-zinc-300'}`}>
@@ -151,13 +132,9 @@ export default function MonthCalendar({ year, month, events, onSelectDate, dragg
                 {holiday && <span className="cal-holiday">{holiday}</span>}
               </div>
               <div className="cal-day-events space-y-0.5">
-                {dayEvents.slice(0, 3).map((e) =>
-                  draggable ? (
-                    <DraggableEventChip key={e.id} event={e} isoForCell={iso} />
-                  ) : (
-                    <StaticEventChip key={e.id} event={e} />
-                  ),
-                )}
+                {dayEvents.slice(0, 3).map((e) => (
+                  <EventChip key={e.id} event={e} isoForCell={iso} drag={activeDrag} />
+                ))}
               </div>
             </DayCell>
           )

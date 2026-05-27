@@ -2,14 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Download, Link2, Plus, RotateCcw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
-import {
-  DndContext,
-  PointerSensor,
-  TouchSensor,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
+import { useCalendarDrag } from '@/lib/useCalendarDrag'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
 import { eventDisplayName, formatLongDate } from '@/lib/scheduleUtils'
@@ -238,23 +232,22 @@ export default function SchedulePage() {
     }
   }
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 6 } }),
+  const handleDrop = useCallback(
+    (ev, targetIso) => {
+      if (!ev || !targetIso) return
+      if (ev.status === 'awaiting_pick') {
+        toast.info('Confirm a pick before rescheduling this event.')
+        return
+      }
+      if (ev.date === targetIso) return
+      setRescheduleEvent(ev)
+      setRescheduleTarget(targetIso)
+    },
+    [],
   )
 
-  const handleDragEnd = (e) => {
-    const ev = e.active?.data?.current?.event
-    const targetIso = e.over?.data?.current?.iso
-    if (!ev || !targetIso) return
-    if (ev.status === 'awaiting_pick') {
-      toast.info('Confirm a pick before rescheduling this event.')
-      return
-    }
-    if (ev.date === targetIso) return
-    setRescheduleEvent(ev)
-    setRescheduleTarget(targetIso)
-  }
+  const canDragCalendar = isAdmin && adminMode && !isShare
+  const calendarDrag = useCalendarDrag({ enabled: canDragCalendar, onDrop: handleDrop })
 
   const handleRescheduleConfirm = async ({ date, end_date, time }) => {
     if (!rescheduleEvent) return
@@ -268,8 +261,6 @@ export default function SchedulePage() {
       toast.error('Could not reschedule')
     }
   }
-
-  const canDragCalendar = isAdmin && adminMode && !isShare
 
   if (loading) {
     return (
@@ -469,14 +460,13 @@ export default function SchedulePage() {
           </p>
         )}
 
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <CalendarStack
-            months={calendarMonths}
-            events={events}
-            onSelectDate={handleSelectDate}
-            draggable={canDragCalendar}
-          />
-        </DndContext>
+        <CalendarStack
+          months={calendarMonths}
+          events={events}
+          onSelectDate={handleSelectDate}
+          draggable={canDragCalendar}
+          drag={calendarDrag}
+        />
       </section>
 
       <NotesSection
