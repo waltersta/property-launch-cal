@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { CATEGORIES } from '@/lib/scheduleApi'
 import { defaultPartiesForEvent, partyChoices } from '@/lib/eventParties'
+import { firstNameOnly } from '@/lib/listingParties'
 import { categoryForTitle, EVENT_TITLE_OPTIONS, normalizeEventTitle } from '@/lib/eventTitles'
 import { Button } from '@/components/ui/button'
 import {
@@ -76,10 +77,13 @@ export default function EventDialog({
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
   const setTitle = (title) => {
+    const openHouseTimes =
+      title === 'Public open house' ? { time: '13:00', end_time: '16:00' } : {}
     setForm((f) => ({
       ...f,
       title,
       category: categoryForTitle(title),
+      ...openHouseTimes,
       required_parties:
         title === 'Key handover'
           ? partyChoices(listingParties)
@@ -276,7 +280,9 @@ export default function EventDialog({
                 <label key={name} className="flex items-center gap-2 text-sm font-body cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={(form.required_parties || []).includes(name)}
+                    checked={(form.required_parties || []).some(
+                      (p) => p === name || firstNameOnly(p) === firstNameOnly(name),
+                    )}
                     onChange={() => toggleParty(name)}
                   />
                   {name}

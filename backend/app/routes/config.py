@@ -29,7 +29,7 @@ def _default_config_out() -> ConfigOut:
         calendar_month_start=4,
         calendar_month_end=5,
         listing_parties={
-            "agent": {"name": "Walter Stauss", "email": "", "color": "#e0e7ff"},
+            "agent": {"name": "Walter", "email": "", "color": "#e0e7ff"},
             "clients": [{"name": "Client", "email": "", "color": "#fef3c7"}],
         },
     )

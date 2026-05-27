@@ -1,5 +1,10 @@
 import { AGENT_NAME, isTwoPartyKeyEvent } from '@/lib/scheduleUtils'
-import { agentDisplayName, clientDisplayNames, DEFAULT_LISTING_PARTIES } from '@/lib/listingParties'
+import {
+  agentDisplayName,
+  clientDisplayNames,
+  DEFAULT_LISTING_PARTIES,
+  firstNameOnly,
+} from '@/lib/listingParties'
 
 /** @deprecated use clientDisplayNames */
 export const CLIENT_LABEL = 'Client'
@@ -24,10 +29,16 @@ function hashName(name) {
   return Math.abs(h)
 }
 
+function namesMatch(a, b) {
+  if (!a || !b) return false
+  if (a === b) return true
+  return firstNameOnly(a) === firstNameOnly(b)
+}
+
 function partyColorFromConfig(name, listingParties) {
   const parties = listingParties || DEFAULT_LISTING_PARTIES
   const agentName = agentDisplayName(parties)
-  if (name === agentName && parties.agent?.color) {
+  if (namesMatch(name, agentName) && parties.agent?.color) {
     const bg = parties.agent.color
     return { bg, text: textOnBg(bg), label: name }
   }

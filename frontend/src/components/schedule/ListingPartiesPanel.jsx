@@ -46,21 +46,21 @@ export default function ListingPartiesPanel({ propertySlug, listingParties, onSa
       <div>
         <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Agent & clients</p>
         <p className="text-sm text-zinc-600 font-body leading-snug mt-1">
-          Agent name replaces “Walter Stauss” on the calendar. Up to {MAX_CLIENTS} client names with email and
+          Agent first name is shown on the calendar (e.g. Walter). Up to {MAX_CLIENTS} client names with email and
           legend colors.
         </p>
       </div>
 
       <div className="grid sm:grid-cols-3 gap-3 items-end border-b border-zinc-100 pb-4">
         <div className="sm:col-span-2">
-          <Label htmlFor="party-agent-name">Agent name</Label>
-          <Input
-            id="party-agent-name"
-            value={agent.name}
-            onChange={(e) => setAgent((a) => ({ ...a, name: e.target.value }))}
-            className="rounded-none mt-1"
-            placeholder="Listing agent"
-          />
+            <Label htmlFor="party-agent-name">Agent first name</Label>
+            <Input
+              id="party-agent-name"
+              value={agent.name}
+              onChange={(e) => setAgent((a) => ({ ...a, name: e.target.value }))}
+              className="rounded-none mt-1"
+              placeholder="e.g. Walter"
+            />
         </div>
         <div>
           <Label htmlFor="party-agent-color">Color</Label>

@@ -142,6 +142,9 @@ export const CATEGORIES = [
   { value: 'staging', label: 'Staging' },
   { value: 'photo', label: 'Photography' },
   { value: 'listing', label: 'Listing' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'showing', label: 'Showing' },
+  { value: 'deadline', label: 'Deadline' },
   { value: 'general', label: 'General' },
 ]
 

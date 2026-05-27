@@ -194,6 +194,9 @@ export function categoryLabel(cat) {
     staging: 'Staging',
     photo: 'Photo',
     listing: 'Listing',
+    marketing: 'Marketing',
+    showing: 'Showing',
+    deadline: 'Deadline',
     general: 'General',
   }
   return map[cat] || cat
@@ -206,12 +209,15 @@ export function categoryColor(cat) {
     photo: 'bg-amber-100 text-amber-900',
     listing: 'bg-emerald-100 text-emerald-900',
     keys: 'bg-yellow-100 text-yellow-900',
+    marketing: 'bg-rose-100 text-rose-900',
+    showing: 'bg-cyan-100 text-cyan-900',
+    deadline: 'bg-orange-100 text-orange-900',
     general: 'bg-zinc-100 text-zinc-800',
   }
   return map[cat] || map.general
 }
 
-const AGENT_NAME = 'Walter Stauss'
+const AGENT_NAME = 'Walter'
 
 /** User-facing event name (calendar chips, timeline headings). */
 export function eventDisplayName(event) {

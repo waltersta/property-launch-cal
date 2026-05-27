@@ -1,8 +1,15 @@
 import json
 from typing import Any
 
+def _first_name_only(name: str) -> str:
+    t = (name or "").strip()
+    if not t:
+        return ""
+    return t.split()[0]
+
+
 DEFAULT_LISTING_PARTIES: dict[str, Any] = {
-    "agent": {"name": "Walter Stauss", "email": "", "color": "#e0e7ff"},
+    "agent": {"name": "Walter", "email": "", "color": "#e0e7ff"},
     "clients": [{"name": "Client", "email": "", "color": "#fef3c7"}],
 }
 
@@ -32,10 +39,10 @@ def parse_listing_parties(raw: str | None) -> dict[str, Any]:
                 "color": str(item.get("color") or "#fef3c7").strip() or "#fef3c7",
             }
         )
+    agent_raw = str(agent.get("name") or DEFAULT_LISTING_PARTIES["agent"]["name"]).strip()
     return {
         "agent": {
-            "name": str(agent.get("name") or DEFAULT_LISTING_PARTIES["agent"]["name"]).strip()
-            or DEFAULT_LISTING_PARTIES["agent"]["name"],
+            "name": _first_name_only(agent_raw) or DEFAULT_LISTING_PARTIES["agent"]["name"],
             "email": str(agent.get("email") or "").strip(),
             "color": str(agent.get("color") or DEFAULT_LISTING_PARTIES["agent"]["color"]).strip()
             or DEFAULT_LISTING_PARTIES["agent"]["color"],

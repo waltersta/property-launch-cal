@@ -1,8 +1,15 @@
 export const MAX_CLIENTS = 4
 
 export const DEFAULT_LISTING_PARTIES = {
-  agent: { name: 'Walter Stauss', email: '', color: '#e0e7ff' },
+  agent: { name: 'Walter', email: '', color: '#e0e7ff' },
   clients: [{ name: 'Client', email: '', color: '#fef3c7' }],
+}
+
+/** First token of a full name — used for agent display everywhere. */
+export function firstNameOnly(name) {
+  const t = String(name || '').trim()
+  if (!t) return ''
+  return t.split(/\s+/)[0]
 }
 
 const CLIENT_COLORS = ['#fef3c7', '#fce7f3', '#d1fae5', '#e0f2fe']
@@ -25,9 +32,10 @@ export function normalizeListingParties(raw) {
     })
     if (clients.length >= MAX_CLIENTS) break
   }
+  const agentRaw = String(agent.name || DEFAULT_LISTING_PARTIES.agent.name).trim()
   return {
     agent: {
-      name: String(agent.name || DEFAULT_LISTING_PARTIES.agent.name).trim() || DEFAULT_LISTING_PARTIES.agent.name,
+      name: firstNameOnly(agentRaw) || DEFAULT_LISTING_PARTIES.agent.name,
       email: String(agent.email || '').trim(),
       color: String(agent.color || DEFAULT_LISTING_PARTIES.agent.color).trim() || DEFAULT_LISTING_PARTIES.agent.color,
     },
@@ -58,7 +66,7 @@ export function partiesForSave(agent, clientRows) {
     .filter((row) => row.name)
   return {
     agent: {
-      name: String(agent.name || '').trim() || DEFAULT_LISTING_PARTIES.agent.name,
+      name: firstNameOnly(String(agent.name || '').trim()) || DEFAULT_LISTING_PARTIES.agent.name,
       email: String(agent.email || '').trim(),
       color: String(agent.color || '').trim() || DEFAULT_LISTING_PARTIES.agent.color,
     },
@@ -67,7 +75,8 @@ export function partiesForSave(agent, clientRows) {
 }
 
 export function agentDisplayName(parties) {
-  return parties?.agent?.name?.trim() || DEFAULT_LISTING_PARTIES.agent.name
+  const raw = parties?.agent?.name?.trim() || DEFAULT_LISTING_PARTIES.agent.name
+  return firstNameOnly(raw) || DEFAULT_LISTING_PARTIES.agent.name
 }
 
 export function clientDisplayNames(parties) {
