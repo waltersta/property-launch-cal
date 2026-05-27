@@ -115,6 +115,32 @@ export function sharpImageUrl(url, width = 2400) {
   }
 }
 
+/** Latest `updated_at` across events and notes (schedule last modified). */
+export function scheduleLastModified(events, notes) {
+  let latest = null
+  const consider = (iso) => {
+    if (!iso) return
+    const d = new Date(iso)
+    if (Number.isNaN(d.getTime())) return
+    if (!latest || d > latest) latest = d
+  }
+  for (const e of events || []) consider(e.updated_at)
+  for (const n of notes || []) consider(n.updated_at)
+  return latest
+}
+
+/** New start/end dates when dropping an event onto `targetIso`. */
+export function rescheduleDatesForDrop(event, targetIso) {
+  if (!event?.date || !targetIso) return null
+  const wasMultiDay = Boolean(event.end_date && event.end_date !== event.date)
+  if (!wasMultiDay) return { date: targetIso }
+  const span = dayCount(event.date, event.end_date)
+  return {
+    date: targetIso,
+    end_date: addDays(targetIso, span - 1),
+  }
+}
+
 export function formatDateTime(date) {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)

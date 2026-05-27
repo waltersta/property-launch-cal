@@ -10,6 +10,8 @@ import {
   eventDisplayName,
   formatDateTime,
   formatLongDate,
+  rescheduleDatesForDrop,
+  scheduleLastModified,
   sharpImageUrl,
 } from '@/lib/scheduleUtils'
 import { Button } from '@/components/ui/button'
@@ -18,7 +20,6 @@ import CalendarStack from '@/components/schedule/CalendarStack'
 import Timeline from '@/components/schedule/Timeline'
 import EventDialog from '@/components/schedule/EventDialog'
 import PickDateDialog from '@/components/schedule/PickDateDialog'
-import RescheduleDialog from '@/components/schedule/RescheduleDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
 import CreateListingDialog from '@/components/schedule/CreateListingDialog'
@@ -45,10 +46,7 @@ export default function SchedulePage() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [pickEvent, setPickEvent] = useState(null)
   const [pickOpen, setPickOpen] = useState(false)
-  const [rescheduleEvent, setRescheduleEvent] = useState(null)
-  const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [loadError, setLoadError] = useState(null)
-  const [lastLoadedAt, setLastLoadedAt] = useState(null)
   const [createListingOpen, setCreateListingOpen] = useState(false)
   const [headerImgFailed, setHeaderImgFailed] = useState(false)
 
@@ -56,7 +54,6 @@ export default function SchedulePage() {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
     setEvents(evs)
     setNotes(nts)
-    setLastLoadedAt(new Date())
   }, [])
 
   const load = useCallback(async () => {
@@ -145,6 +142,11 @@ export default function SchedulePage() {
     }
     return months
   }, [config])
+
+  const lastModifiedAt = useMemo(
+    () => scheduleLastModified(events, notes),
+    [events, notes],
+  )
 
   const handleAdminSuccess = (token) => {
     localStorage.setItem(ADMIN_KEY, token)
@@ -249,32 +251,39 @@ export default function SchedulePage() {
     }
   }
 
-  const handleDrop = useCallback((ev, targetIso) => {
-    if (!ev || !targetIso) return
-    if (ev.status === 'awaiting_pick') {
-      toast.info('Confirm a pick before rescheduling this event.')
-      return
-    }
-    if (ev.date === targetIso) return
-    setRescheduleEvent(ev)
-    setRescheduleTarget(targetIso)
-  }, [])
+  const handleDrop = useCallback(
+    async (ev, targetIso) => {
+      if (!ev || !targetIso) return
+      if (ev.status === 'awaiting_pick') {
+        toast.info('Confirm a pick before moving this event.')
+        return
+      }
+      if (ev.date === targetIso) return
+      const dates = rescheduleDatesForDrop(ev, targetIso)
+      if (!dates) return
+
+      const snapshot = events
+      setEvents((prev) =>
+        prev.map((e) =>
+          e.id === ev.id
+            ? { ...e, ...dates, updated_at: new Date().toISOString() }
+            : e,
+        ),
+      )
+      try {
+        const updated = await api.update(ev.id, dates)
+        setEvents((prev) => prev.map((e) => (e.id === updated.id ? updated : e)))
+        toast.success('Event moved')
+      } catch {
+        setEvents(snapshot)
+        toast.error('Could not move event')
+      }
+    },
+    [events],
+  )
 
   const canDragCalendar = isAdmin && adminMode && !isShare
   const calendarDrag = useCalendarDrag({ enabled: canDragCalendar, onDrop: handleDrop })
-
-  const handleRescheduleConfirm = async ({ date, end_date, time }) => {
-    if (!rescheduleEvent) return
-    try {
-      await api.update(rescheduleEvent.id, { date, end_date, time })
-      toast.success('Event rescheduled')
-      setRescheduleEvent(null)
-      setRescheduleTarget(null)
-      load()
-    } catch {
-      toast.error('Could not reschedule')
-    }
-  }
 
   if (loading) {
     return (
@@ -469,10 +478,10 @@ export default function SchedulePage() {
       )}
 
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
-        {lastLoadedAt && (
-          <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400">
-            <p className="font-body text-sm font-bold text-zinc-950 tracking-tight">
-              As of {formatDateTime(lastLoadedAt)}
+        {lastModifiedAt && (
+          <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
+            <p className="as-of-stamp font-bold text-zinc-950">
+              As of {formatDateTime(lastModifiedAt)}
             </p>
           </div>
         )}
@@ -492,8 +501,8 @@ export default function SchedulePage() {
 
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
-            Hover an event for details. Double-click to jump to the timeline. Press and drag a chip to
-            another day (long-press on touch).
+            Hover an event for details. Double-click to jump to the timeline. Drag a chip to another day
+            to move it (long-press on touch).
           </p>
         )}
 
@@ -586,18 +595,6 @@ export default function SchedulePage() {
         onSubmit={handlePick}
       />
 
-      <RescheduleDialog
-        open={Boolean(rescheduleEvent)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRescheduleEvent(null)
-            setRescheduleTarget(null)
-          }
-        }}
-        event={rescheduleEvent}
-        targetDate={rescheduleTarget}
-        onConfirm={handleRescheduleConfirm}
-      />
     </div>
   )
 }

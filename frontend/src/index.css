@@ -91,6 +91,12 @@ body {
   border-color: #dbeafe;
 }
 
+.as-of-stamp {
+  font-family: 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+}
+
 .font-cal-narrow {
   font-family: 'Switzer', sans-serif;
   font-weight: 500;
