@@ -64,12 +64,14 @@ function DraggableEventChip({ event, isoForCell }) {
   )
 }
 
-function DayCell({ iso, inMonth, holiday, dayEvents, hasEvents, awaiting, onClick, draggable, children }) {
+function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, draggable, children }) {
   const { isOver, setNodeRef } = useDroppable({
     id: `day:${iso}`,
     data: { iso, type: 'day' },
     disabled: !draggable,
   })
+
+  const interactive = hasEvents || draggable
 
   const baseClass = `cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
     inMonth ? 'bg-white' : 'bg-zinc-50/80'
@@ -77,16 +79,33 @@ function DayCell({ iso, inMonth, holiday, dayEvents, hasEvents, awaiting, onClic
     awaiting ? 'ring-1 ring-inset ring-amber-200' : ''
   } ${isOver ? 'ring-2 ring-inset ring-zinc-900 bg-zinc-50' : ''}`
 
+  const handleClick = () => {
+    if (hasEvents) onClick(iso, dayEvents)
+  }
+  const handleKeyDown = (e) => {
+    if (!interactive) return
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      handleClick()
+    }
+  }
+
+  // Render as <div role="button"> instead of <button> so draggable chips
+  // (which dnd-kit gives role="button") aren't nested inside a real button.
+  // Nesting interactive elements is invalid HTML and breaks pointer-event
+  // libraries like dnd-kit on some browsers.
   return (
-    <button
+    <div
       ref={setNodeRef}
-      type="button"
-      disabled={!hasEvents && !draggable}
-      onClick={() => hasEvents && onClick(iso, dayEvents)}
+      role={interactive ? 'button' : undefined}
+      tabIndex={interactive ? 0 : -1}
+      aria-disabled={!interactive}
+      onClick={interactive ? handleClick : undefined}
+      onKeyDown={interactive ? handleKeyDown : undefined}
       className={baseClass}
     >
       {children}
-    </button>
+    </div>
   )
 }
 
@@ -119,7 +138,6 @@ export default function MonthCalendar({ year, month, events, onSelectDate, dragg
               key={iso + inMonth}
               iso={iso}
               inMonth={inMonth}
-              holiday={holiday}
               dayEvents={dayEvents}
               hasEvents={hasEvents}
               awaiting={awaiting}
