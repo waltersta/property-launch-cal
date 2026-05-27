@@ -100,6 +100,21 @@ export function formatShortDate(s) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+/** Request a sharper Unsplash URL when the hero/header is scaled up. */
+export function sharpImageUrl(url, width = 2400) {
+  if (!url || typeof url !== 'string') return url
+  if (!url.includes('images.unsplash.com')) return url
+  try {
+    const base = url.startsWith('http') ? url : `https:${url}`
+    const u = new URL(base)
+    if (!u.searchParams.has('w')) u.searchParams.set('w', String(width))
+    if (!u.searchParams.has('q')) u.searchParams.set('q', '85')
+    return u.toString()
+  } catch {
+    return url
+  }
+}
+
 export function formatDateTime(date) {
   if (!date) return ''
   const d = date instanceof Date ? date : new Date(date)

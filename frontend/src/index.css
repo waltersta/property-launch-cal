@@ -204,17 +204,22 @@ body {
 .hero-bg {
   background-size: cover;
   background-position: center;
+  image-rendering: auto;
 }
 
-/* Full-width banner at native aspect ratio (1024×76); no upscale past 100% width */
+/* Banner: cap at design width so the browser does not upscale a 1024px asset on wide screens */
 .branded-header {
   width: 100%;
   line-height: 0;
+  display: flex;
+  justify-content: center;
+  background: #fff;
 }
 
 .branded-header-img {
   display: block;
   width: 100%;
+  max-width: 1024px;
   height: auto;
-  max-width: 100%;
+  image-rendering: -webkit-optimize-contrast;
 }

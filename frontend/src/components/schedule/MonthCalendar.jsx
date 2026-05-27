@@ -1,4 +1,5 @@
-import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import { Lock } from 'lucide-react'
 import {
   HOLIDAYS,
@@ -7,6 +8,7 @@ import {
   buildMonthGrid,
   calendarEventShortName,
   eventsOnDate,
+  formatLongDate,
   isoDate,
 } from '@/lib/scheduleUtils'
 import { getEventChipPresentation } from '@/lib/responsibilityColors'
@@ -16,46 +18,96 @@ function cellLabel(e) {
   return short.length > 22 ? `${short.slice(0, 20)}…` : short
 }
 
-function StaticEventChip({ event }) {
-  const { style, awaiting } = getEventChipPresentation(event)
-  const isAdminOnly = event.visibility === 'admin_only'
-  return (
+function EventHoverTip({ tip }) {
+  if (!tip) return null
+  const { event, rect } = tip
+  const style = {
+    position: 'fixed',
+    left: Math.min(rect.left, window.innerWidth - 280),
+    top: rect.bottom + 6,
+    zIndex: 60,
+  }
+  return createPortal(
     <div
-      className="cal-event-chip font-cal-narrow truncate"
+      className="pointer-events-none max-w-[260px] border border-zinc-200 bg-white p-2.5 shadow-lg text-left"
       style={style}
-      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
+      role="tooltip"
     >
-      {awaiting && <span className="cal-event-q">?</span>}
-      {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
-      {cellLabel(event)}
-    </div>
+      <p className="font-sans text-sm font-semibold text-zinc-950">{calendarEventShortName(event)}</p>
+      {event.status === 'awaiting_pick' ? (
+        <p className="font-body text-xs text-amber-800 mt-1">Client choosing between dates</p>
+      ) : (
+        event.date && (
+          <p className="font-body text-xs text-zinc-600 mt-1">
+            {formatLongDate(event.date)}
+            {event.time ? ` · ${event.time}` : ''}
+            {event.end_date && event.end_date !== event.date ? ` – ${formatLongDate(event.end_date)}` : ''}
+          </p>
+        )
+      )}
+      {event.description && (
+        <p className="font-body text-xs text-zinc-500 mt-1 line-clamp-3">{event.description}</p>
+      )}
+    </div>,
+    document.body,
   )
 }
 
-function DraggableEventChip({ event, isoForCell }) {
-  const dragId = `event:${event.id}:${isoForCell}`
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
-    id: dragId,
-    data: { event, sourceIso: isoForCell, type: 'event' },
-  })
+function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip }) {
   const { style, awaiting } = getEventChipPresentation(event)
   const isAdminOnly = event.visibility === 'admin_only'
+  const draggable = Boolean(drag)
+  const isDragging = draggable && drag.draggingId === event.id
 
   const merged = {
     ...style,
-    cursor: 'grab',
-    opacity: isDragging ? 0.4 : 1,
-    touchAction: 'none',
+    opacity: isDragging ? 0.85 : 1,
+    ...(draggable
+      ? {
+          cursor: isDragging ? 'grabbing' : 'grab',
+          touchAction: 'none',
+          userSelect: 'none',
+        }
+      : {}),
+  }
+
+  const chipClass = [
+    'cal-event-chip font-cal-narrow truncate relative z-[1]',
+    isDragging ? 'ring-2 ring-zinc-900 shadow-md' : '',
+    draggable && !isDragging ? 'hover:ring-1 hover:ring-zinc-400' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+
+  const handlePointerDown = draggable
+    ? (e) => {
+        e.stopPropagation()
+        drag.startDrag(e, event, isoForCell)
+      }
+    : undefined
+
+  const handleDoubleClick = (e) => {
+    e.stopPropagation()
+    onScrollToEvent?.(event)
+  }
+
+  const handleMouseEnter = (e) => {
+    if (draggable && drag?.isDragging) return
+    const rect = e.currentTarget.getBoundingClientRect()
+    showTip({ event, rect })
   }
 
   return (
     <div
-      ref={setNodeRef}
-      {...listeners}
-      {...attributes}
-      className="cal-event-chip font-cal-narrow truncate"
+      className={chipClass}
       style={merged}
-      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
+      onPointerDown={handlePointerDown}
+      onDoubleClick={handleDoubleClick}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={hideTip}
+      onFocus={handleMouseEnter}
+      onBlur={hideTip}
+      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : undefined}
     >
       {awaiting && <span className="cal-event-q">?</span>}
       {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
@@ -64,20 +116,23 @@ function DraggableEventChip({ event, isoForCell }) {
   )
 }
 
-function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, draggable, children }) {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `day:${iso}`,
-    data: { iso, type: 'day' },
-    disabled: !draggable,
-  })
-
-  const interactive = hasEvents || draggable
+function DayCell({
+  iso,
+  inMonth,
+  dayEvents,
+  hasEvents,
+  awaiting,
+  onClick,
+  dragOver,
+  children,
+}) {
+  const interactive = hasEvents
 
   const baseClass = `cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
     inMonth ? 'bg-white' : 'bg-zinc-50/80'
   } ${hasEvents ? 'hover:bg-zinc-50 cursor-pointer print:hover:bg-white' : 'cursor-default'} ${
     awaiting ? 'ring-1 ring-inset ring-amber-200' : ''
-  } ${isOver ? 'ring-2 ring-inset ring-zinc-900 bg-zinc-50' : ''}`
+  } ${dragOver ? 'bg-amber-50/80' : ''}`
 
   const handleClick = () => {
     if (hasEvents) onClick(iso, dayEvents)
@@ -90,16 +145,12 @@ function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, dragga
     }
   }
 
-  // Render as <div role="button"> instead of <button> so draggable chips
-  // (which dnd-kit gives role="button") aren't nested inside a real button.
-  // Nesting interactive elements is invalid HTML and breaks pointer-event
-  // libraries like dnd-kit on some browsers.
   return (
     <div
-      ref={setNodeRef}
+      data-day-iso={iso}
+      data-in-month={inMonth ? 'true' : 'false'}
       role={interactive ? 'button' : undefined}
       tabIndex={interactive ? 0 : -1}
-      aria-disabled={!interactive}
       onClick={interactive ? handleClick : undefined}
       onKeyDown={interactive ? handleKeyDown : undefined}
       className={baseClass}
@@ -109,11 +160,24 @@ function DayCell({ iso, inMonth, dayEvents, hasEvents, awaiting, onClick, dragga
   )
 }
 
-export default function MonthCalendar({ year, month, events, onSelectDate, draggable = false }) {
+export default function MonthCalendar({
+  year,
+  month,
+  events,
+  onSelectDate,
+  draggable = false,
+  drag = null,
+  onScrollToEvent,
+}) {
   const cells = buildMonthGrid(year, month)
+  const activeDrag = draggable ? drag : null
+  const [hoverTip, setHoverTip] = useState(null)
+  const showTip = (tip) => setHoverTip(tip)
+  const hideTip = () => setHoverTip(null)
 
   return (
     <div className="month-calendar">
+      <EventHoverTip tip={hoverTip} />
       <h3 className="font-sans text-xl font-medium tracking-tight mb-3 print:text-lg">
         {MONTHS[month]} {year}
       </h3>
@@ -132,17 +196,18 @@ export default function MonthCalendar({ year, month, events, onSelectDate, dragg
           const dayEvents = eventsOnDate(events, iso)
           const hasEvents = dayEvents.length > 0
           const awaiting = dayEvents.some((e) => e.status === 'awaiting_pick')
+          const dragOver = Boolean(activeDrag?.overIso === iso && activeDrag?.isDragging)
 
           return (
             <DayCell
-              key={iso + inMonth}
+              key={`${year}-${month}-${iso}-${inMonth}`}
               iso={iso}
               inMonth={inMonth}
               dayEvents={dayEvents}
               hasEvents={hasEvents}
               awaiting={awaiting}
               onClick={onSelectDate}
-              draggable={draggable}
+              dragOver={dragOver}
             >
               <div className="cal-day-header">
                 <span className={`cal-day-num ${inMonth ? 'text-zinc-950' : 'text-zinc-300'}`}>
@@ -151,13 +216,17 @@ export default function MonthCalendar({ year, month, events, onSelectDate, dragg
                 {holiday && <span className="cal-holiday">{holiday}</span>}
               </div>
               <div className="cal-day-events space-y-0.5">
-                {dayEvents.slice(0, 3).map((e) =>
-                  draggable ? (
-                    <DraggableEventChip key={e.id} event={e} isoForCell={iso} />
-                  ) : (
-                    <StaticEventChip key={e.id} event={e} />
-                  ),
-                )}
+                {dayEvents.slice(0, 3).map((e) => (
+                  <EventChip
+                    key={e.id}
+                    event={e}
+                    isoForCell={iso}
+                    drag={activeDrag}
+                    onScrollToEvent={onScrollToEvent}
+                    showTip={showTip}
+                    hideTip={hideTip}
+                  />
+                ))}
               </div>
             </DayCell>
           )
