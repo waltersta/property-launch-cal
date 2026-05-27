@@ -113,6 +113,14 @@ def _migrate_sqlite_columns(engine) -> None:
             )
         if "listing_parties_json" not in cols:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN listing_parties_json TEXT DEFAULT ''"))
+        if "schedule_type_label" not in cols:
+            conn.execute(
+                text("ALTER TABLE property_config ADD COLUMN schedule_type_label VARCHAR(128) DEFAULT 'Listing schedule'")
+            )
+        if "create_property_label" not in cols:
+            conn.execute(
+                text("ALTER TABLE property_config ADD COLUMN create_property_label VARCHAR(128) DEFAULT 'New listing'")
+            )
         event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
         if "property_id" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))

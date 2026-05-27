@@ -19,6 +19,8 @@ class ConfigOut(BaseModel):
     client_auth_required: bool = False
     property_name: str
     tagline: str
+    schedule_type_label: str = "Listing schedule"
+    create_property_label: str = "New listing"
     launch_date_label: str
     hero_image_url: str
     header_image_url: str
@@ -37,6 +39,8 @@ class ConfigUpdate(BaseModel):
     client_passcode: str | None = None
     property_name: str | None = None
     tagline: str | None = None
+    schedule_type_label: str | None = None
+    create_property_label: str | None = None
     launch_date_label: str | None = None
     hero_image_url: str | None = None
     header_image_url: str | None = None

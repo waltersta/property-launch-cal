@@ -19,6 +19,8 @@ class PropertyConfig(Base):
     property_slug: Mapped[str] = mapped_column(String(64), default="property", index=True)
     property_name: Mapped[str] = mapped_column(String(255), default="Property")
     tagline: Mapped[str] = mapped_column(String(255), default="New Listing")
+    schedule_type_label: Mapped[str] = mapped_column(String(128), default="Listing schedule")
+    create_property_label: Mapped[str] = mapped_column(String(128), default="New listing")
     launch_date_label: Mapped[str] = mapped_column(String(128), default="")
     hero_image_url: Mapped[str] = mapped_column(Text, default="")
     header_image_url: Mapped[str] = mapped_column(Text, default="")

@@ -97,6 +97,13 @@ body {
   letter-spacing: 0.02em;
 }
 
+.as-of-label {
+  font-family: 'Switzer', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: normal;
+}
+
 .font-cal-narrow {
   font-family: 'Switzer', sans-serif;
   font-weight: 500;

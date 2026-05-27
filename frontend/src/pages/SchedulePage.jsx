@@ -103,7 +103,7 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (config?.property_name) {
-      document.title = `${config.property_name} · Listing Schedule`
+      document.title = `${config.property_name} · ${config.schedule_type_label || 'Listing schedule'}`
     }
   }, [config?.property_name])
 
@@ -390,7 +390,7 @@ export default function SchedulePage() {
       >
         <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 pb-10 sm:pb-14 pt-24">
           <p className="overline text-white/70 mb-3">
-            Listing schedule · {config?.calendar_year || new Date().getFullYear()}
+            {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || new Date().getFullYear()}
             {!isShare && adminMode && isAdmin && (
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
@@ -452,7 +452,7 @@ export default function SchedulePage() {
                   onClick={() => setCreateListingOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  New listing
+                  {config?.create_property_label || 'New listing'}
                 </Button>
               </>
             )}
@@ -474,6 +474,7 @@ export default function SchedulePage() {
       <CreateListingDialog
         open={createListingOpen}
         onOpenChange={setCreateListingOpen}
+        dialogTitle={config?.create_property_label || 'New listing'}
         onCreated={(row) => {
           const next = new URLSearchParams(searchParams)
           next.delete('view')
@@ -507,7 +508,8 @@ export default function SchedulePage() {
         {lastModifiedAt && (
           <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
             <p className="as-of-stamp font-bold text-zinc-950">
-              As of {formatDateTime(lastModifiedAt)}
+              <span className="as-of-label">As of </span>
+              {formatDateTime(lastModifiedAt)}
             </p>
           </div>
         )}
@@ -599,14 +601,18 @@ export default function SchedulePage() {
             propertySlug={config.property_slug}
             propertyName={config.property_name}
             listingParties={listingParties}
+            scheduleTypeLabel={config.schedule_type_label}
+            tagline={config.tagline}
+            createPropertyLabel={config.create_property_label}
             onPartiesSaved={load}
+            onBrandingSaved={load}
           />
         </section>
       )}
 
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 font-body">
         <p>
-          {propertyName} · Listing schedule · {config?.calendar_year || ''}
+          {propertyName} · {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || ''}
         </p>
         <p className="mt-1 text-xs">
           {isShare

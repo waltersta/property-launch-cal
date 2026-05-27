@@ -10,6 +10,8 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         client_auth_required=client_auth_required(cfg),
         property_name=cfg.property_name,
         tagline=cfg.tagline,
+        schedule_type_label=cfg.schedule_type_label or "Listing schedule",
+        create_property_label=cfg.create_property_label or "New listing",
         launch_date_label=cfg.launch_date_label,
         hero_image_url=cfg.hero_image_url,
         header_image_url=cfg.header_image_url,
