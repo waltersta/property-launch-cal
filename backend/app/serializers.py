@@ -45,6 +45,8 @@ def event_to_out(ev: Event) -> EventOut:
         assigned_phone=ev.assigned_phone,
         assigned_email=ev.assigned_email,
         visibility=ev.visibility or "public",
+        required_parties=ev.required_parties,
+        completed=bool(ev.completed),
         pick_token=ev.pick_token,
         pick_token_created_at=ev.pick_token_created_at,
         created_at=ev.created_at,

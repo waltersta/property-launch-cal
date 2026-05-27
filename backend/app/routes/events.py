@@ -53,9 +53,11 @@ def create_event(
         assigned_phone=body.assigned_phone,
         assigned_email=body.assigned_email,
         visibility=body.visibility,
+        completed=body.completed,
         order=body.order if body.order is not None else max_order + 1,
     )
     ev.date_options = body.date_options
+    ev.required_parties = body.required_parties
     ev.pick_history = []
     ev.updated_at = utcnow().isoformat()
     db.add(ev)
@@ -81,6 +83,8 @@ def update_event(
     data = body.model_dump(exclude_unset=True)
     if "date_options" in data:
         ev.date_options = data.pop("date_options")
+    if "required_parties" in data:
+        ev.required_parties = data.pop("required_parties")
     for key, value in data.items():
         setattr(ev, key, value)
     if ev.status == "awaiting_pick":

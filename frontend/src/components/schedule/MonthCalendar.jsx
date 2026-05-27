@@ -15,7 +15,8 @@ import { getEventChipPresentation } from '@/lib/responsibilityColors'
 
 function cellLabel(e) {
   const short = calendarEventShortName(e)
-  return short.length > 22 ? `${short.slice(0, 20)}…` : short
+  const text = short.length > 22 ? `${short.slice(0, 20)}…` : short
+  return e.completed ? `✓ ${text}` : text
 }
 
 function EventHoverTip({ tip }) {
@@ -126,25 +127,34 @@ function DayCell({
   hasEvents,
   awaiting,
   onClick,
+  onBlankClick,
+  adminCreate,
   dragOver,
   children,
 }) {
-  const interactive = hasEvents
+  const interactive = hasEvents && inMonth
+  const canCreate = adminCreate && inMonth
 
   const baseClass = `cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
     inMonth ? 'bg-white' : 'bg-zinc-50/80'
-  } ${hasEvents ? 'hover:bg-zinc-50 cursor-pointer print:hover:bg-white' : 'cursor-default'} ${
+  } ${inMonth && (hasEvents || canCreate) ? 'hover:bg-zinc-50 cursor-pointer print:hover:bg-white' : 'cursor-default'} ${
     awaiting ? 'ring-1 ring-inset ring-amber-200' : ''
   } ${dragOver ? 'bg-amber-50/80' : ''}`
 
-  const handleClick = () => {
-    if (hasEvents) onClick(iso, dayEvents)
+  const handleClick = (e) => {
+    if (e.target.closest('.cal-event-chip')) return
+    if (canCreate) {
+      onBlankClick?.(iso)
+      return
+    }
+    if (interactive) onClick?.(iso, dayEvents)
   }
   const handleKeyDown = (e) => {
-    if (!interactive) return
+    if (!canCreate && !interactive) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
-      handleClick()
+      if (canCreate) onBlankClick?.(iso)
+      else if (interactive) onClick?.(iso, dayEvents)
     }
   }
 
@@ -152,10 +162,10 @@ function DayCell({
     <div
       data-day-iso={iso}
       data-in-month={inMonth ? 'true' : 'false'}
-      role={interactive ? 'button' : undefined}
-      tabIndex={interactive ? 0 : -1}
-      onClick={interactive ? handleClick : undefined}
-      onKeyDown={interactive ? handleKeyDown : undefined}
+      role={canCreate || interactive ? 'button' : undefined}
+      tabIndex={canCreate || interactive ? 0 : -1}
+      onClick={canCreate || interactive ? handleClick : undefined}
+      onKeyDown={canCreate || interactive ? handleKeyDown : undefined}
       className={baseClass}
     >
       {children}
@@ -171,6 +181,8 @@ export default function MonthCalendar({
   draggable = false,
   drag = null,
   onScrollToEvent,
+  onCreateOnDate = null,
+  adminCreate = false,
   listingParties = null,
 }) {
   const cells = buildMonthGrid(year, month)
@@ -197,7 +209,7 @@ export default function MonthCalendar({
         {cells.map(({ date, inMonth }) => {
           const iso = isoDate(date)
           const holiday = inMonth ? HOLIDAYS[iso] : null
-          const dayEvents = eventsOnDate(events, iso)
+          const dayEvents = inMonth ? eventsOnDate(events, iso) : []
           const hasEvents = dayEvents.length > 0
           const awaiting = dayEvents.some((e) => e.status === 'awaiting_pick')
           const dragOver = Boolean(activeDrag?.overIso === iso && activeDrag?.isDragging)
@@ -211,6 +223,8 @@ export default function MonthCalendar({
               hasEvents={hasEvents}
               awaiting={awaiting}
               onClick={onSelectDate}
+              onBlankClick={onCreateOnDate}
+              adminCreate={adminCreate}
               dragOver={dragOver}
             >
               <div className="cal-day-header">

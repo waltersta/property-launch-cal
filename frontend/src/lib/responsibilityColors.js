@@ -56,8 +56,10 @@ export function displayPickOwner(owner, listingParties) {
   return owner.trim()
 }
 
-/** Who must participate — agent on site for milestones; key events include all configured clients. */
+/** Who must participate — uses event.required_parties when set, else legacy rules. */
 export function getResponsibleParties(event, listingParties) {
+  const configured = (event?.required_parties || []).filter(Boolean)
+  if (configured.length) return configured
   const parties = listingParties || DEFAULT_LISTING_PARTIES
   const agent = agentDisplayName(parties)
   if (isTwoPartyKeyEvent(event)) {

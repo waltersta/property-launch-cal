@@ -68,6 +68,8 @@ class EventBase(BaseModel):
     assigned_phone: str | None = None
     assigned_email: str | None = None
     visibility: Visibility = "public"
+    required_parties: list[str] = Field(default_factory=list)
+    completed: bool = False
     order: int | None = None
 
 
@@ -90,6 +92,8 @@ class EventUpdate(BaseModel):
     assigned_phone: str | None = None
     assigned_email: str | None = None
     visibility: Visibility | None = None
+    required_parties: list[str] | None = None
+    completed: bool | None = None
     order: int | None = None
 
 
@@ -113,6 +117,8 @@ class EventOut(BaseModel):
     assigned_phone: str | None
     assigned_email: str | None
     visibility: Visibility = "public"
+    required_parties: list[str] = Field(default_factory=list)
+    completed: bool = False
     pick_token: str | None
     pick_token_created_at: str | None
     created_at: str

@@ -45,6 +45,7 @@ export default function SchedulePage() {
   const [unlockOpen, setUnlockOpen] = useState(false)
   const [eventDialogOpen, setEventDialogOpen] = useState(false)
   const [editingEvent, setEditingEvent] = useState(null)
+  const [newEventDate, setNewEventDate] = useState(null)
   const [pickEvent, setPickEvent] = useState(null)
   const [pickOpen, setPickOpen] = useState(false)
   const [loadError, setLoadError] = useState(null)
@@ -205,6 +206,20 @@ export default function SchedulePage() {
     scrollToEvent(dayEvents[0])
   }
 
+  const openNewEvent = useCallback((iso = null) => {
+    setEditingEvent(null)
+    setNewEventDate(iso)
+    setEventDialogOpen(true)
+  }, [])
+
+  const handleCreateOnDate = useCallback(
+    (iso) => {
+      if (!isAdmin || !adminMode || isShare) return
+      openNewEvent(iso)
+    },
+    [adminMode, isAdmin, isShare, openNewEvent],
+  )
+
   const handleSaveEvent = async (payload) => {
     try {
       if (editingEvent) {
@@ -216,9 +231,20 @@ export default function SchedulePage() {
       }
       setEventDialogOpen(false)
       setEditingEvent(null)
+      setNewEventDate(null)
       load()
     } catch {
       toast.error('Could not save event')
+    }
+  }
+
+  const handleToggleComplete = async (ev) => {
+    try {
+      await api.update(ev.id, { completed: !ev.completed })
+      toast.success(ev.completed ? 'Marked incomplete' : 'Marked completed')
+      load()
+    } catch {
+      toast.error('Could not update event')
     }
   }
 
@@ -408,7 +434,7 @@ export default function SchedulePage() {
             )}
             {isAdmin && adminMode && !isShare && (
               <>
-                <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={() => { setEditingEvent(null); setEventDialogOpen(true) }}>
+                <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={() => openNewEvent()}>
                   <Plus className="h-4 w-4 mr-1" />
                   Add event
                 </Button>
@@ -513,8 +539,8 @@ export default function SchedulePage() {
 
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
-            Hover an event for details. Double-click to jump to the timeline. Drag a chip to another day
-            to move it (long-press on touch).
+            Click a blank day to add an event. Hover a chip for details; double-click to jump to the timeline.
+            Drag a chip to move it (long-press on touch). Mark done in the timeline or event editor.
           </p>
         )}
 
@@ -526,6 +552,8 @@ export default function SchedulePage() {
           drag={calendarDrag}
           onScrollToEvent={scrollToEvent}
           listingParties={listingParties}
+          adminCreate={canDragCalendar}
+          onCreateOnDate={handleCreateOnDate}
         />
       </section>
 
@@ -568,8 +596,9 @@ export default function SchedulePage() {
           isShare={isShare}
           tzid={tzid}
           propertySlug={config?.property_slug}
-          onEdit={(e) => { setEditingEvent(e); setEventDialogOpen(true) }}
+          onEdit={(e) => { setEditingEvent(e); setNewEventDate(null); setEventDialogOpen(true) }}
           onDelete={handleDelete}
+          onToggleComplete={handleToggleComplete}
           onPickRequested={(e) => { setPickEvent(e); setPickOpen(true) }}
           onChanged={load}
         />
@@ -597,8 +626,16 @@ export default function SchedulePage() {
 
       <EventDialog
         open={eventDialogOpen}
-        onOpenChange={setEventDialogOpen}
+        onOpenChange={(open) => {
+          setEventDialogOpen(open)
+          if (!open) {
+            setEditingEvent(null)
+            setNewEventDate(null)
+          }
+        }}
         initial={editingEvent}
+        defaultDate={newEventDate}
+        listingParties={listingParties}
         onSubmit={handleSaveEvent}
       />
 

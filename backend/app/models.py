@@ -57,6 +57,8 @@ class Event(Base):
     assigned_phone: Mapped[str | None] = mapped_column(String(64), nullable=True)
     assigned_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     visibility: Mapped[str] = mapped_column(String(16), default="public")
+    required_parties_json: Mapped[str] = mapped_column(Text, default="[]")
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
     pick_token: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     pick_token_created_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
@@ -72,6 +74,19 @@ class Event(Base):
     @date_options.setter
     def date_options(self, value: list[str] | None):
         self.date_options_json = json.dumps(value or [])
+
+    @property
+    def required_parties(self) -> list[str]:
+        try:
+            raw = json.loads(self.required_parties_json or "[]")
+            return [str(x).strip() for x in raw if str(x).strip()]
+        except json.JSONDecodeError:
+            return []
+
+    @required_parties.setter
+    def required_parties(self, value: list[str] | None):
+        names = [str(x).strip() for x in (value or []) if str(x).strip()]
+        self.required_parties_json = json.dumps(names)
 
     @property
     def pick_history(self) -> list:

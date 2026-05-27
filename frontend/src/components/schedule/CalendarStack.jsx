@@ -11,6 +11,8 @@ export default function CalendarStack({
   draggable = false,
   drag = null,
   onScrollToEvent,
+  onCreateOnDate = null,
+  adminCreate = false,
   listingParties = null,
 }) {
   return (
@@ -31,6 +33,8 @@ export default function CalendarStack({
                 draggable={draggable}
                 drag={drag}
                 onScrollToEvent={onScrollToEvent}
+                onCreateOnDate={onCreateOnDate}
+                adminCreate={adminCreate}
                 listingParties={listingParties}
               />
               <ResponsibilityLegend parties={parties} listingParties={listingParties} />

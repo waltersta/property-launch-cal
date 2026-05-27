@@ -118,6 +118,10 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))
         if "visibility" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN visibility VARCHAR(16) DEFAULT 'public'"))
+        if "required_parties_json" not in event_cols:
+            conn.execute(text("ALTER TABLE events ADD COLUMN required_parties_json TEXT DEFAULT '[]'"))
+        if "completed" not in event_cols:
+            conn.execute(text("ALTER TABLE events ADD COLUMN completed BOOLEAN DEFAULT 0"))
         conn.commit()
 
 

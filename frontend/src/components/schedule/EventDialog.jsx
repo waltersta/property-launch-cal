@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Lock } from 'lucide-react'
 import { CATEGORIES } from '@/lib/scheduleApi'
+import { defaultPartiesForEvent, partyChoices } from '@/lib/eventParties'
+import { categoryForTitle, EVENT_TITLE_OPTIONS, normalizeEventTitle } from '@/lib/eventTitles'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -26,32 +28,75 @@ const empty = {
   assigned_email: '',
   pick_owner: '',
   date_options: [],
+  required_parties: [],
   visibility: 'public',
+  completed: false,
 }
 
-export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
+export default function EventDialog({
+  open,
+  onOpenChange,
+  initial,
+  defaultDate = null,
+  listingParties = null,
+  onSubmit,
+}) {
   const [form, setForm] = useState(empty)
   const [optionInput, setOptionInput] = useState('')
   const [requestPick, setRequestPick] = useState(false)
 
+  const choices = partyChoices(listingParties)
+
   useEffect(() => {
     if (open) {
       if (initial) {
+        const title = normalizeEventTitle(initial.title)
         setForm({
           ...empty,
           ...initial,
+          title,
+          category: initial.category || categoryForTitle(title),
           date_options: initial.date_options || [],
+          required_parties: defaultPartiesForEvent(initial, listingParties),
+          completed: Boolean(initial.completed),
         })
         setRequestPick(initial.status === 'awaiting_pick')
       } else {
-        setForm(empty)
+        setForm({
+          ...empty,
+          date: defaultDate || '',
+          required_parties: defaultPartiesForEvent({ category: 'general' }, listingParties),
+        })
         setRequestPick(false)
       }
       setOptionInput('')
     }
-  }, [open, initial])
+  }, [open, initial, defaultDate, listingParties])
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }))
+
+  const setTitle = (title) => {
+    setForm((f) => ({
+      ...f,
+      title,
+      category: categoryForTitle(title),
+      required_parties:
+        title === 'Key handover'
+          ? partyChoices(listingParties)
+          : f.required_parties?.length
+            ? f.required_parties
+            : defaultPartiesForEvent({ category: categoryForTitle(title) }, listingParties),
+    }))
+  }
+
+  const toggleParty = (name) => {
+    setForm((f) => {
+      const set = new Set(f.required_parties || [])
+      if (set.has(name)) set.delete(name)
+      else set.add(name)
+      return { ...f, required_parties: [...set] }
+    })
+  }
 
   const addOption = () => {
     if (!optionInput || form.date_options.includes(optionInput)) return
@@ -71,6 +116,8 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
       assigned_phone: form.assigned_phone || '',
       assigned_email: form.assigned_email || '',
       pick_owner: form.pick_owner || '',
+      required_parties: form.required_parties || [],
+      completed: Boolean(form.completed),
       time: form.time || null,
       end_time: form.end_time || null,
       visibility: form.visibility === 'admin_only' ? 'admin_only' : 'public',
@@ -80,6 +127,7 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
       payload.date = null
       payload.end_date = null
       payload.date_options = form.date_options
+      payload.completed = false
     } else {
       payload.status = initial?.status === 'picked' ? 'picked' : 'confirmed'
       payload.date = form.date || null
@@ -93,6 +141,10 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
     }
     if (!requestPick && !payload.date) {
       alert('Please choose a date')
+      return
+    }
+    if (!payload.required_parties?.length) {
+      alert('Select at least one party who must be on site')
       return
     }
     onSubmit(payload)
@@ -111,14 +163,26 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <Label>Title</Label>
-            <Input
+            <Label htmlFor="event-title-select">Event</Label>
+            <select
+              id="event-title-select"
               value={form.title}
-              onChange={(e) => update('title', e.target.value)}
-              placeholder="e.g. Home Inspection"
-              className="rounded-none mt-1"
+              onChange={(e) => setTitle(e.target.value)}
+              className="mt-1 w-full h-10 border border-zinc-300 px-2 text-sm"
               required
-            />
+            >
+              <option value="" disabled>
+                Select event…
+              </option>
+              {form.title && !EVENT_TITLE_OPTIONS.some((o) => o.title === form.title) && (
+                <option value={form.title}>{form.title}</option>
+              )}
+              {EVENT_TITLE_OPTIONS.map((o) => (
+                <option key={o.title} value={o.title}>
+                  {o.title}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <Label>Description</Label>
@@ -203,12 +267,44 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
               </div>
             </div>
           )}
+
+          <div className="border-t border-zinc-200 pt-4 space-y-2">
+            <p className="overline text-zinc-500">Parties on site</p>
+            <p className="text-xs text-zinc-500 font-body">Who must attend — drives calendar colors and legend.</p>
+            <div className="flex flex-wrap gap-3">
+              {choices.map((name) => (
+                <label key={name} className="flex items-center gap-2 text-sm font-body cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={(form.required_parties || []).includes(name)}
+                    onChange={() => toggleParty(name)}
+                  />
+                  {name}
+                </label>
+              ))}
+            </div>
+          </div>
+
           <div className="border-t border-zinc-200 pt-4 space-y-3">
-            <p className="overline text-zinc-500">Assignee</p>
+            <p className="overline text-zinc-500">Assigned</p>
             <Input value={form.assigned_to} onChange={(e) => update('assigned_to', e.target.value)} placeholder="Name" className="rounded-none" />
             <Input value={form.assigned_phone} onChange={(e) => update('assigned_phone', e.target.value)} placeholder="Phone" className="rounded-none" />
             <Input value={form.assigned_email} onChange={(e) => update('assigned_email', e.target.value)} placeholder="Email" className="rounded-none" />
           </div>
+
+          {initial && !requestPick && (
+            <div className="border-t border-zinc-200 pt-4">
+              <label className="flex items-center gap-2 text-sm font-body cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(form.completed)}
+                  onChange={(e) => update('completed', e.target.checked)}
+                />
+                Mark as completed (shows ✓ on calendar)
+              </label>
+            </div>
+          )}
+
           <div className="border-t border-zinc-200 pt-4">
             <label className="flex items-start gap-3 text-sm font-body cursor-pointer">
               <input

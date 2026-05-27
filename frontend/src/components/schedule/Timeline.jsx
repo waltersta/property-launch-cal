@@ -48,6 +48,7 @@ export default function Timeline({
   propertySlug,
   onEdit,
   onDelete,
+  onToggleComplete,
   onPickRequested,
   onChanged,
 }) {
@@ -131,7 +132,16 @@ export default function Timeline({
                   )}
                 </div>
                 {isAdmin && (
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 items-center">
+                    <label className="flex items-center gap-1.5 text-xs text-zinc-600 font-body cursor-pointer mr-1">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(e.completed)}
+                        onChange={() => onToggleComplete?.(e)}
+                        aria-label="Mark completed"
+                      />
+                      Done
+                    </label>
                     <Button variant="ghost" size="sm" className="rounded-none h-8 px-2" onClick={() => onEdit(e)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -150,6 +160,11 @@ export default function Timeline({
               <div className="flex items-start gap-3 mb-2">
                 <Icon className="h-5 w-5 text-zinc-400 mt-0.5 shrink-0" />
                 <h4 className="font-sans text-xl sm:text-2xl font-medium tracking-tight text-zinc-950">
+                  {e.completed && (
+                    <span className="text-emerald-700 mr-1" aria-hidden>
+                      ✓
+                    </span>
+                  )}
                   {timelineEventTitle(e)}
                 </h4>
               </div>
