@@ -12,7 +12,7 @@ import {
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
-import { eventDisplayName, formatLongDate } from '@/lib/scheduleUtils'
+import { eventDisplayName, formatDateTime, formatLongDate } from '@/lib/scheduleUtils'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import CalendarStack from '@/components/schedule/CalendarStack'
@@ -49,11 +49,13 @@ export default function SchedulePage() {
   const [rescheduleEvent, setRescheduleEvent] = useState(null)
   const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [loadError, setLoadError] = useState(null)
+  const [lastLoadedAt, setLastLoadedAt] = useState(null)
 
   const loadListingData = useCallback(async (slug) => {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
     setEvents(evs)
     setNotes(nts)
+    setLastLoadedAt(new Date())
   }, [])
 
   const load = useCallback(async () => {
@@ -450,6 +452,11 @@ export default function SchedulePage() {
 
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
         <p className="section-subhead text-zinc-400 mb-2">01 — Calendar</p>
+        {lastLoadedAt && (
+          <p className="font-body text-xs uppercase tracking-widest text-zinc-400 mb-2">
+            As of {formatDateTime(lastLoadedAt)}
+          </p>
+        )}
         <h2 className="section-heading mb-2">
           {calendarMonths.length >= 2
             ? `${calendarMonths[0] && new Date(calendarMonths[0].year, calendarMonths[0].month).toLocaleString('en-US', { month: 'long' })} & ${calendarMonths[calendarMonths.length - 1] && new Date(calendarMonths[calendarMonths.length - 1].year, calendarMonths[calendarMonths.length - 1].month).toLocaleString('en-US', { month: 'long' })} ${calendarMonths[0]?.year}`

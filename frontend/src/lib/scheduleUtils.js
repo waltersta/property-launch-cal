@@ -100,6 +100,23 @@ export function formatShortDate(s) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+export function formatDateTime(date) {
+  if (!date) return ''
+  const d = date instanceof Date ? date : new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+  const datePart = d.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })
+  const timePart = d.toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+  return `${datePart} at ${timePart}`
+}
+
 export function eventsOnDate(events, isoStr) {
   return events.filter((e) => {
     if (e.status === 'awaiting_pick') {
