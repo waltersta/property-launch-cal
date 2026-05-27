@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { feedbackDragDrop, feedbackDragPick, feedbackDragStart } from '@/lib/dragFeedback'
+import { dayCount } from '@/lib/scheduleUtils'
 
 const DAY_CELL_SELECTOR = '[data-day-iso]'
 
@@ -12,6 +14,16 @@ function suppressNextClick() {
   setTimeout(() => document.removeEventListener('click', block, true), 0)
 }
 
+function chipPresentationFromElement(el) {
+  if (!el) return {}
+  const cs = window.getComputedStyle(el)
+  return {
+    background: cs.backgroundColor,
+    color: cs.color,
+    backgroundImage: cs.backgroundImage !== 'none' ? cs.backgroundImage : undefined,
+  }
+}
+
 /**
  * Native pointer-event drag for calendar chips (no @dnd-kit).
  * Drop targets: nearest `[data-day-iso]` under the pointer.
@@ -23,8 +35,10 @@ export function useCalendarDrag({
   touchDelay = 200,
   touchTolerance = 6,
 } = {}) {
+  const [pressedId, setPressedId] = useState(null)
   const [draggingId, setDraggingId] = useState(null)
   const [overIso, setOverIso] = useState(null)
+  const [ghost, setGhost] = useState(null)
   const stateRef = useRef(null)
 
   const cleanup = useCallback(() => {
@@ -45,8 +59,10 @@ export function useCalendarDrag({
       }
     }
     stateRef.current = null
+    setPressedId(null)
     setDraggingId(null)
     setOverIso(null)
+    setGhost(null)
   }, [])
 
   useEffect(() => () => cleanup(), [cleanup])
@@ -57,6 +73,18 @@ export function useCalendarDrag({
     return cell?.getAttribute('data-day-iso') || null
   }
 
+  const updateGhostPosition = (s, clientX, clientY) => {
+    setGhost({
+      event: s.event,
+      x: clientX - s.grabOffsetX,
+      y: clientY - s.grabOffsetY,
+      width: s.ghostWidth,
+      height: s.ghostHeight,
+      style: s.ghostStyle,
+      spanDays: s.spanDays,
+    })
+  }
+
   const startDrag = useCallback(
     (e, event, sourceIso) => {
       if (!enabled) return
@@ -64,37 +92,55 @@ export function useCalendarDrag({
       if (e.pointerType === 'mouse' && !e.isPrimary) return
 
       e.stopPropagation()
+      feedbackDragPick()
+      setPressedId(event.id)
 
       const isTouch = e.pointerType === 'touch'
       const startX = e.clientX
       const startY = e.clientY
+      const startElement = e.currentTarget
+      const rect = startElement.getBoundingClientRect()
+      const grabOffsetX = e.clientX - rect.left
+      const grabOffsetY = e.clientY - rect.top
+      const ghostStyle = chipPresentationFromElement(startElement)
+      const spanDays = dayCount(event.date, event.end_date)
+
+      const activate = (s) => {
+        s.activated = true
+        setPressedId(null)
+        setDraggingId(s.event.id)
+        feedbackDragStart()
+        updateGhostPosition(s, s.lastX ?? startX, s.lastY ?? startY)
+        try {
+          s.startElement.setPointerCapture(s.pointerId)
+        } catch {
+          /* no-op */
+        }
+      }
 
       const onMove = (mv) => {
         const s = stateRef.current
         if (!s) return
+        s.lastX = mv.clientX
+        s.lastY = mv.clientY
         const dx = mv.clientX - s.startX
         const dy = mv.clientY - s.startY
         const dist = Math.hypot(dx, dy)
 
         if (!s.activated) {
           if (s.isTouch) {
-            if (dist > touchTolerance) cleanup()
-            return
-          }
-          if (dist >= distance) {
-            s.activated = true
-            setDraggingId(s.event.id)
-            try {
-              s.startElement.setPointerCapture(s.pointerId)
-            } catch {
-              /* no-op */
+            if (dist > touchTolerance) {
+              setPressedId(null)
+              cleanup()
             }
-          } else {
             return
           }
+          if (dist >= distance) activate(s)
+          else return
         }
 
         if (mv.cancelable) mv.preventDefault()
+        updateGhostPosition(s, mv.clientX, mv.clientY)
         setOverIso(findDayIso(mv.clientX, mv.clientY))
       }
 
@@ -104,13 +150,16 @@ export function useCalendarDrag({
         const wasActivated = s.activated
         const ev = s.event
         const src = s.sourceIso
+        const x = up?.clientX ?? startX
+        const y = up?.clientY ?? startY
         cleanup()
         if (!wasActivated) return
         suppressNextClick()
-        const x = up?.clientX ?? startX
-        const y = up?.clientY ?? startY
         const iso = findDayIso(x, y)
-        if (iso && iso !== src) onDrop?.(ev, iso)
+        if (iso && iso !== src) {
+          feedbackDragDrop()
+          onDrop?.(ev, iso)
+        }
       }
 
       const onKey = (kv) => {
@@ -123,10 +172,16 @@ export function useCalendarDrag({
         startX,
         startY,
         pointerId: e.pointerId,
-        startElement: e.currentTarget,
+        startElement,
         isTouch,
         activated: false,
         delayTimer: null,
+        grabOffsetX,
+        grabOffsetY,
+        ghostWidth: rect.width,
+        ghostHeight: rect.height,
+        ghostStyle,
+        spanDays,
         onMove,
         onUp,
         onKey,
@@ -144,18 +199,19 @@ export function useCalendarDrag({
         newState.delayTimer = setTimeout(() => {
           const s = stateRef.current
           if (!s || s !== newState) return
-          s.activated = true
-          setDraggingId(s.event.id)
-          try {
-            s.startElement.setPointerCapture(s.pointerId)
-          } catch {
-            /* no-op */
-          }
+          activate(s)
         }, touchDelay)
       }
     },
     [cleanup, distance, enabled, onDrop, touchDelay, touchTolerance],
   )
 
-  return { draggingId, overIso, startDrag, isDragging: draggingId != null }
+  return {
+    pressedId,
+    draggingId,
+    overIso,
+    ghost,
+    startDrag,
+    isDragging: draggingId != null,
+  }
 }

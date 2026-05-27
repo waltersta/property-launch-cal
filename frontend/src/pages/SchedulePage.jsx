@@ -5,6 +5,7 @@ import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
+import { agentDisplayName, clientNamesLabel, normalizeListingParties } from '@/lib/listingParties'
 import { useCalendarDrag } from '@/lib/useCalendarDrag'
 import {
   eventDisplayName,
@@ -146,6 +147,11 @@ export default function SchedulePage() {
   const lastModifiedAt = useMemo(
     () => scheduleLastModified(events, notes),
     [events, notes],
+  )
+
+  const listingParties = useMemo(
+    () => normalizeListingParties(config?.listing_parties),
+    [config?.listing_parties],
   )
 
   const handleAdminSuccess = (token) => {
@@ -441,7 +447,12 @@ export default function SchedulePage() {
 
       {isAdmin && adminMode && !isShare && config && (
         <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-4 pb-2">
-          <ListingAdminPanel propertySlug={config.property_slug} propertyName={config.property_name} />
+          <ListingAdminPanel
+            propertySlug={config.property_slug}
+            propertyName={config.property_name}
+            listingParties={listingParties}
+            onPartiesSaved={load}
+          />
         </section>
       )}
 
@@ -461,7 +472,7 @@ export default function SchedulePage() {
         <div className="bg-amber-50 border-b border-amber-200">
           <div className="max-w-7xl mx-auto px-6 sm:px-10 py-4 flex flex-wrap items-center justify-between gap-3">
             <p className="font-body text-sm text-amber-950">
-              <strong>{displayPickOwner(awaitingPickEvent.pick_owner)}:</strong> please choose your preferred date for{' '}
+              <strong>{displayPickOwner(awaitingPickEvent.pick_owner, listingParties)}:</strong> please choose your preferred date for{' '}
               <strong>{eventDisplayName(awaitingPickEvent)}</strong> ({(awaitingPickEvent.date_options || []).length} options).
             </p>
             <Button
@@ -496,7 +507,8 @@ export default function SchedulePage() {
         </p>
 
         <p className="font-body text-zinc-500 mb-6 text-sm print:hidden">
-          Colors show who must be on site (legend under each month). Split = Walter and client for key handover. ? = client still choosing a date.
+          Colors show who must be on site (legend under each month). Split = {agentDisplayName(listingParties)} and{' '}
+          {clientNamesLabel(listingParties)} for key handover. ? = client still choosing a date.
         </p>
 
         {canDragCalendar && (
@@ -513,6 +525,7 @@ export default function SchedulePage() {
           draggable={canDragCalendar}
           drag={calendarDrag}
           onScrollToEvent={scrollToEvent}
+          listingParties={listingParties}
         />
       </section>
 
@@ -550,6 +563,7 @@ export default function SchedulePage() {
 
         <Timeline
           events={events}
+          listingParties={listingParties}
           isAdmin={isAdmin && adminMode && !isShare}
           isShare={isShare}
           tzid={tzid}

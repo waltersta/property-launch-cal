@@ -6,6 +6,7 @@ from ..database import get_db
 from ..models import PropertyConfig
 from ..property import resolve_property
 from ..schemas import ConfigOut, ConfigUpdate
+from ..listing_parties import dump_listing_parties
 from ..serializers import config_to_out
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -27,6 +28,10 @@ def _default_config_out() -> ConfigOut:
         calendar_year=2026,
         calendar_month_start=4,
         calendar_month_end=5,
+        listing_parties={
+            "agent": {"name": "Walter Stauss", "email": "", "color": "#e0e7ff"},
+            "clients": [{"name": "Client", "email": "", "color": "#fef3c7"}],
+        },
     )
 
 
@@ -55,6 +60,8 @@ def update_config(
         cfg.timezone = data.pop("timezone")
     if "client_passcode" in data:
         set_client_passcode(cfg, data.pop("client_passcode"))
+    if "listing_parties" in data:
+        cfg.listing_parties_json = dump_listing_parties(data.pop("listing_parties"))
     for key, value in data.items():
         setattr(cfg, key, value)
     db.commit()

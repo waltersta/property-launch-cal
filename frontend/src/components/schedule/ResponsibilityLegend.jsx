@@ -1,6 +1,7 @@
 import { getPersonColor } from '@/lib/responsibilityColors'
+import { agentDisplayName, clientDisplayNames } from '@/lib/listingParties'
 
-export default function ResponsibilityLegend({ parties }) {
+export default function ResponsibilityLegend({ parties, listingParties }) {
   if (!parties?.length) return null
 
   return (
@@ -12,7 +13,7 @@ export default function ResponsibilityLegend({ parties }) {
         On-site
       </span>
       {parties.map((name) => {
-        const c = getPersonColor(name)
+        const c = getPersonColor(name, listingParties)
         return (
           <span key={name} className="inline-flex items-center gap-1.5 text-xs text-zinc-700 font-body">
             <span
@@ -24,16 +25,23 @@ export default function ResponsibilityLegend({ parties }) {
           </span>
         )
       })}
-      <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600 font-body">
-        <span
-          className="inline-block w-3 h-3 shrink-0 border border-zinc-300/80"
-          style={{
-            background: 'linear-gradient(to right, #e0e7ff 50%, #fef3c7 50%)',
-          }}
-          aria-hidden
-        />
-        Two parties
-      </span>
+      {parties.length > 1 && (
+        <span className="inline-flex items-center gap-1.5 text-xs text-zinc-600 font-body">
+          <span
+            className="inline-block w-3 h-3 shrink-0 border border-zinc-300/80"
+            style={{
+              background: (() => {
+                const a = getPersonColor(agentDisplayName(listingParties), listingParties)
+                const clients = clientDisplayNames(listingParties)
+                const b = getPersonColor(clients[0], listingParties)
+                return `linear-gradient(to right, ${a.bg} 50%, ${b.bg} 50%)`
+              })(),
+            }}
+            aria-hidden
+          />
+          Key handover (agent + clients)
+        </span>
+      )}
       <span className="inline-flex items-center gap-1 text-xs text-zinc-600 font-body">
         <span className="font-display font-semibold text-zinc-500">?</span>
         Awaiting preference

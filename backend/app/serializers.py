@@ -1,3 +1,4 @@
+from .listing_parties import parse_listing_parties
 from .models import Event, PropertyConfig, ScheduleNote
 from .property import client_auth_required
 from .schemas import ConfigOut, EventOut, NoteOut
@@ -19,6 +20,7 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         calendar_year=cfg.calendar_year,
         calendar_month_start=cfg.calendar_month_start,
         calendar_month_end=cfg.calendar_month_end,
+        listing_parties=parse_listing_parties(cfg.listing_parties_json),
     )
 
 

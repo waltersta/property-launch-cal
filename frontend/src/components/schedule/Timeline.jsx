@@ -41,6 +41,7 @@ function dateColumn(e) {
 
 export default function Timeline({
   events,
+  listingParties,
   isAdmin,
   isShare,
   tzid,
@@ -166,7 +167,7 @@ export default function Timeline({
                   <span className="overline text-zinc-400 shrink-0">With</span>
                   {pending && e.pick_owner && (
                     <>
-                      <span className="font-medium text-zinc-950">{displayPickOwner(e.pick_owner)}</span>
+                      <span className="font-medium text-zinc-950">{displayPickOwner(e.pick_owner, listingParties)}</span>
                       {e.assigned_to && e.assigned_to !== e.pick_owner && (
                         <span className="text-zinc-400" aria-hidden>
                           ·

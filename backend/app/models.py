@@ -31,6 +31,7 @@ class PropertyConfig(Base):
     calendar_month_end: Mapped[int] = mapped_column(Integer, default=5)
     admin_passcode_hash: Mapped[str] = mapped_column(String(255), default="")
     client_passcode_hash: Mapped[str] = mapped_column(String(255), default="")
+    listing_parties_json: Mapped[str] = mapped_column(Text, default="")
 
 
 class Event(Base):

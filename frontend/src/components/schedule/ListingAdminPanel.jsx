@@ -5,6 +5,7 @@ import api from '@/lib/scheduleApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
 
 async function copyText(url, label) {
   try {
@@ -15,7 +16,7 @@ async function copyText(url, label) {
   }
 }
 
-export default function ListingAdminPanel({ propertySlug, propertyName }) {
+export default function ListingAdminPanel({ propertySlug, propertyName, listingParties, onPartiesSaved }) {
   const [clientPasscode, setClientPasscode] = useState('')
   const [savingPasscode, setSavingPasscode] = useState(false)
   const [links, setLinks] = useState(null)
@@ -68,6 +69,11 @@ export default function ListingAdminPanel({ propertySlug, propertyName }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
+        <ListingPartiesPanel
+          propertySlug={propertySlug}
+          listingParties={listingParties}
+          onSaved={onPartiesSaved}
+        />
         <div className="bg-white border border-zinc-200 p-4 space-y-3">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client passcode</p>
           <p className="text-sm text-zinc-600 font-body leading-snug">

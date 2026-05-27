@@ -145,6 +145,22 @@ body {
   overflow: hidden;
 }
 
+.cal-chip-pressed {
+  outline: 2px solid #2563eb;
+  outline-offset: 1px;
+  transform: scale(1.03);
+  z-index: 2;
+}
+
+.cal-chip-dragging {
+  outline: 1px dashed #a1a1aa;
+}
+
+.cal-drag-ghost {
+  transform: rotate(-1deg);
+  cursor: grabbing;
+}
+
 .cal-event-chip {
   font-size: 0.6875rem;
   line-height: 1.2;

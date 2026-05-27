@@ -53,15 +53,17 @@ function EventHoverTip({ tip }) {
   )
 }
 
-function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip }) {
-  const { style, awaiting } = getEventChipPresentation(event)
+function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip, listingParties }) {
+  const { style, awaiting } = getEventChipPresentation(event, listingParties)
   const isAdminOnly = event.visibility === 'admin_only'
   const draggable = Boolean(drag)
+  const isPressed = draggable && drag.pressedId === event.id
   const isDragging = draggable && drag.draggingId === event.id
+  const isGhostSource = isDragging
 
   const merged = {
     ...style,
-    opacity: isDragging ? 0.85 : 1,
+    opacity: isGhostSource ? 0.2 : 1,
     ...(draggable
       ? {
           cursor: isDragging ? 'grabbing' : 'grab',
@@ -73,8 +75,9 @@ function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip 
 
   const chipClass = [
     'cal-event-chip font-cal-narrow truncate relative z-[1]',
-    isDragging ? 'ring-2 ring-zinc-900 shadow-md' : '',
-    draggable && !isDragging ? 'hover:ring-1 hover:ring-zinc-400' : '',
+    isPressed ? 'cal-chip-pressed' : '',
+    isGhostSource ? 'cal-chip-dragging' : '',
+    draggable && !isPressed && !isGhostSource ? 'hover:ring-1 hover:ring-zinc-400' : '',
   ]
     .filter(Boolean)
     .join(' ')
@@ -168,6 +171,7 @@ export default function MonthCalendar({
   draggable = false,
   drag = null,
   onScrollToEvent,
+  listingParties = null,
 }) {
   const cells = buildMonthGrid(year, month)
   const activeDrag = draggable ? drag : null
@@ -225,6 +229,7 @@ export default function MonthCalendar({
                     onScrollToEvent={onScrollToEvent}
                     showTip={showTip}
                     hideTip={hideTip}
+                    listingParties={listingParties}
                   />
                 ))}
               </div>

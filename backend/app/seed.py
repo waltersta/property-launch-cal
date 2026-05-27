@@ -111,6 +111,8 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(
                 text("ALTER TABLE property_config ADD COLUMN client_passcode_hash VARCHAR(255) DEFAULT ''")
             )
+        if "listing_parties_json" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN listing_parties_json TEXT DEFAULT ''"))
         event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
         if "property_id" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))

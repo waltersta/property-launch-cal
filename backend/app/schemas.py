@@ -3,6 +3,17 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 
+class PartyPerson(BaseModel):
+    name: str = ""
+    email: str = ""
+    color: str = "#e0e7ff"
+
+
+class ListingParties(BaseModel):
+    agent: PartyPerson = Field(default_factory=PartyPerson)
+    clients: list[PartyPerson] = Field(default_factory=list)
+
+
 class ConfigOut(BaseModel):
     property_slug: str
     client_auth_required: bool = False
@@ -18,6 +29,7 @@ class ConfigOut(BaseModel):
     calendar_year: int
     calendar_month_start: int
     calendar_month_end: int
+    listing_parties: ListingParties = Field(default_factory=ListingParties)
 
 
 class ConfigUpdate(BaseModel):
@@ -35,6 +47,7 @@ class ConfigUpdate(BaseModel):
     calendar_year: int | None = None
     calendar_month_start: int | None = None
     calendar_month_end: int | None = None
+    listing_parties: ListingParties | None = None
 
 
 Visibility = Literal["public", "admin_only"]
