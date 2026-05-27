@@ -1,3 +1,5 @@
+import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { Lock } from 'lucide-react'
 import {
   HOLIDAYS,
   MONTHS,
@@ -14,23 +16,81 @@ function cellLabel(e) {
   return short.length > 22 ? `${short.slice(0, 20)}…` : short
 }
 
-function EventChip({ event }) {
+function StaticEventChip({ event }) {
   const { style, awaiting } = getEventChipPresentation(event)
-  const label = cellLabel(event)
-
+  const isAdminOnly = event.visibility === 'admin_only'
   return (
     <div
       className="cal-event-chip font-cal-narrow truncate"
       style={style}
-      title={calendarEventShortName(event)}
+      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
     >
       {awaiting && <span className="cal-event-q">?</span>}
-      {label}
+      {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
+      {cellLabel(event)}
     </div>
   )
 }
 
-export default function MonthCalendar({ year, month, events, onSelectDate }) {
+function DraggableEventChip({ event, isoForCell }) {
+  const dragId = `event:${event.id}:${isoForCell}`
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: dragId,
+    data: { event, sourceIso: isoForCell, type: 'event' },
+  })
+  const { style, awaiting } = getEventChipPresentation(event)
+  const isAdminOnly = event.visibility === 'admin_only'
+
+  const merged = {
+    ...style,
+    cursor: 'grab',
+    opacity: isDragging ? 0.4 : 1,
+    touchAction: 'none',
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className="cal-event-chip font-cal-narrow truncate"
+      style={merged}
+      title={isAdminOnly ? `${calendarEventShortName(event)} (admin-only)` : calendarEventShortName(event)}
+    >
+      {awaiting && <span className="cal-event-q">?</span>}
+      {isAdminOnly && <Lock className="h-2.5 w-2.5 shrink-0 opacity-70" aria-hidden />}
+      {cellLabel(event)}
+    </div>
+  )
+}
+
+function DayCell({ iso, inMonth, holiday, dayEvents, hasEvents, awaiting, onClick, draggable, children }) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: `day:${iso}`,
+    data: { iso, type: 'day' },
+    disabled: !draggable,
+  })
+
+  const baseClass = `cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
+    inMonth ? 'bg-white' : 'bg-zinc-50/80'
+  } ${hasEvents ? 'hover:bg-zinc-50 cursor-pointer print:hover:bg-white' : 'cursor-default'} ${
+    awaiting ? 'ring-1 ring-inset ring-amber-200' : ''
+  } ${isOver ? 'ring-2 ring-inset ring-zinc-900 bg-zinc-50' : ''}`
+
+  return (
+    <button
+      ref={setNodeRef}
+      type="button"
+      disabled={!hasEvents && !draggable}
+      onClick={() => hasEvents && onClick(iso, dayEvents)}
+      className={baseClass}
+    >
+      {children}
+    </button>
+  )
+}
+
+export default function MonthCalendar({ year, month, events, onSelectDate, draggable = false }) {
   const cells = buildMonthGrid(year, month)
 
   return (
@@ -55,29 +115,33 @@ export default function MonthCalendar({ year, month, events, onSelectDate }) {
           const awaiting = dayEvents.some((e) => e.status === 'awaiting_pick')
 
           return (
-            <button
+            <DayCell
               key={iso + inMonth}
-              type="button"
-              disabled={!hasEvents}
-              onClick={() => hasEvents && onSelectDate(iso, dayEvents)}
-              className={`cal-day-cell relative min-h-[76px] sm:min-h-[84px] print:min-h-[68px] p-1 text-left transition-colors ${
-                inMonth ? 'bg-white' : 'bg-zinc-50/80'
-              } ${hasEvents ? 'hover:bg-zinc-50 cursor-pointer print:hover:bg-white' : 'cursor-default'} ${awaiting ? 'ring-1 ring-inset ring-amber-200' : ''}`}
+              iso={iso}
+              inMonth={inMonth}
+              holiday={holiday}
+              dayEvents={dayEvents}
+              hasEvents={hasEvents}
+              awaiting={awaiting}
+              onClick={onSelectDate}
+              draggable={draggable}
             >
               <div className="cal-day-header">
-                <span
-                  className={`cal-day-num ${inMonth ? 'text-zinc-950' : 'text-zinc-300'}`}
-                >
+                <span className={`cal-day-num ${inMonth ? 'text-zinc-950' : 'text-zinc-300'}`}>
                   {date.getDate()}
                 </span>
                 {holiday && <span className="cal-holiday">{holiday}</span>}
               </div>
               <div className="cal-day-events space-y-0.5">
-                {dayEvents.slice(0, 3).map((e) => (
-                  <EventChip key={e.id} event={e} />
-                ))}
+                {dayEvents.slice(0, 3).map((e) =>
+                  draggable ? (
+                    <DraggableEventChip key={e.id} event={e} isoForCell={iso} />
+                  ) : (
+                    <StaticEventChip key={e.id} event={e} />
+                  ),
+                )}
               </div>
-            </button>
+            </DayCell>
           )
         })}
       </div>

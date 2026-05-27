@@ -8,7 +8,7 @@ from ..database import get_db
 from ..links import ensure_pick_token
 from ..models import Event, utcnow
 from ..pick_service import apply_pick
-from ..property import require_listing_access, resolve_property
+from ..property import is_admin_request, require_listing_access, resolve_property
 from ..schemas import EventCreate, EventOut, EventUpdate, PickIn
 from ..seed import apply_seed
 from ..serializers import event_to_out
@@ -19,9 +19,13 @@ router = APIRouter(prefix="/events", tags=["events"])
 @router.get("", response_model=list[EventOut])
 def list_events(
     cfg=Depends(require_listing_access),
+    is_admin: bool = Depends(is_admin_request),
     db: Session = Depends(get_db),
 ):
-    rows = db.query(Event).filter(Event.property_id == cfg.id).order_by(Event.order).all()
+    q = db.query(Event).filter(Event.property_id == cfg.id)
+    if not is_admin:
+        q = q.filter((Event.visibility == "public") | (Event.visibility.is_(None)))
+    rows = q.order_by(Event.order).all()
     return [event_to_out(e) for e in rows]
 
 
@@ -48,6 +52,7 @@ def create_event(
         assigned_to=body.assigned_to,
         assigned_phone=body.assigned_phone,
         assigned_email=body.assigned_email,
+        visibility=body.visibility,
         order=body.order if body.order is not None else max_order + 1,
     )
     ev.date_options = body.date_options

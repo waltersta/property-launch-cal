@@ -38,7 +38,11 @@ def get_client_links(
 
     awaiting = (
         db.query(Event)
-        .filter(Event.status == "awaiting_pick", Event.property_id == cfg.id)
+        .filter(
+            Event.status == "awaiting_pick",
+            Event.property_id == cfg.id,
+            (Event.visibility == "public") | (Event.visibility.is_(None)),
+        )
         .order_by(Event.order)
         .all()
     )
@@ -65,11 +69,16 @@ def get_client_links(
     }
 
 
+def _load_public_event_by_token(db: Session, token: str) -> Event:
+    ev = db.query(Event).filter(Event.pick_token == token).first()
+    if not ev or (ev.visibility or "public") != "public":
+        raise HTTPException(status_code=404, detail="Invalid pick link")
+    return ev
+
+
 @router.get("/pick/{token}", response_model=SharePickOut)
 def get_share_pick(token: str, db: Session = Depends(get_db)):
-    ev = db.query(Event).filter(Event.pick_token == token).first()
-    if not ev:
-        raise HTTPException(status_code=404, detail="Invalid pick link")
+    ev = _load_public_event_by_token(db, token)
     cfg = db.get(PropertyConfig, 1)
     property_name = cfg.property_name if cfg else "Property"
     return SharePickOut(event=event_to_out(ev), property_name=property_name)
@@ -82,9 +91,7 @@ def submit_share_pick(
     request: Request,
     db: Session = Depends(get_db),
 ):
-    ev = db.query(Event).filter(Event.pick_token == token).first()
-    if not ev:
-        raise HTTPException(status_code=404, detail="Invalid pick link")
+    ev = _load_public_event_by_token(db, token)
     ev = apply_pick(db, ev, body.date, body.picked_by, request=request)
     cfg = db.get(PropertyConfig, 1)
     property_name = cfg.property_name if cfg else "Property"

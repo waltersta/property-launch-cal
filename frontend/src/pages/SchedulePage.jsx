@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { Download, Link2, Plus, RotateCcw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
@@ -12,6 +19,7 @@ import CalendarStack from '@/components/schedule/CalendarStack'
 import Timeline from '@/components/schedule/Timeline'
 import EventDialog from '@/components/schedule/EventDialog'
 import PickDateDialog from '@/components/schedule/PickDateDialog'
+import RescheduleDialog from '@/components/schedule/RescheduleDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientSharePanel from '@/components/schedule/ClientSharePanel'
 import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
@@ -38,6 +46,8 @@ export default function SchedulePage() {
   const [editingEvent, setEditingEvent] = useState(null)
   const [pickEvent, setPickEvent] = useState(null)
   const [pickOpen, setPickOpen] = useState(false)
+  const [rescheduleEvent, setRescheduleEvent] = useState(null)
+  const [rescheduleTarget, setRescheduleTarget] = useState(null)
   const [loadError, setLoadError] = useState(null)
 
   const loadListingData = useCallback(async (slug) => {
@@ -227,6 +237,39 @@ export default function SchedulePage() {
       toast.error('Could not reset')
     }
   }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  )
+
+  const handleDragEnd = (e) => {
+    const ev = e.active?.data?.current?.event
+    const targetIso = e.over?.data?.current?.iso
+    if (!ev || !targetIso) return
+    if (ev.status === 'awaiting_pick') {
+      toast.info('Confirm a pick before rescheduling this event.')
+      return
+    }
+    if (ev.date === targetIso) return
+    setRescheduleEvent(ev)
+    setRescheduleTarget(targetIso)
+  }
+
+  const handleRescheduleConfirm = async ({ date, end_date, time }) => {
+    if (!rescheduleEvent) return
+    try {
+      await api.update(rescheduleEvent.id, { date, end_date, time })
+      toast.success('Event rescheduled')
+      setRescheduleEvent(null)
+      setRescheduleTarget(null)
+      load()
+    } catch {
+      toast.error('Could not reschedule')
+    }
+  }
+
+  const canDragCalendar = isAdmin && adminMode && !isShare
 
   if (loading) {
     return (
@@ -420,11 +463,20 @@ export default function SchedulePage() {
           Colors show who must be on site (legend under each month). Split = Walter and client for key handover. ? = client still choosing a date.
         </p>
 
-        <CalendarStack
-          months={calendarMonths}
-          events={events}
-          onSelectDate={handleSelectDate}
-        />
+        {canDragCalendar && (
+          <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
+            Tip: drag any event chip onto another day to reschedule it (long-press on touch devices).
+          </p>
+        )}
+
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <CalendarStack
+            months={calendarMonths}
+            events={events}
+            onSelectDate={handleSelectDate}
+            draggable={canDragCalendar}
+          />
+        </DndContext>
       </section>
 
       <NotesSection
@@ -504,6 +556,19 @@ export default function SchedulePage() {
         onOpenChange={setPickOpen}
         event={pickEvent}
         onSubmit={handlePick}
+      />
+
+      <RescheduleDialog
+        open={Boolean(rescheduleEvent)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRescheduleEvent(null)
+            setRescheduleTarget(null)
+          }
+        }}
+        event={rescheduleEvent}
+        targetDate={rescheduleTarget}
+        onConfirm={handleRescheduleConfirm}
       />
     </div>
   )

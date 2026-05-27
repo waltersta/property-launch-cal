@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -37,6 +37,9 @@ class ConfigUpdate(BaseModel):
     calendar_month_end: int | None = None
 
 
+Visibility = Literal["public", "admin_only"]
+
+
 class EventBase(BaseModel):
     title: str
     description: str = ""
@@ -51,6 +54,7 @@ class EventBase(BaseModel):
     assigned_to: str | None = None
     assigned_phone: str | None = None
     assigned_email: str | None = None
+    visibility: Visibility = "public"
     order: int | None = None
 
 
@@ -72,6 +76,7 @@ class EventUpdate(BaseModel):
     assigned_to: str | None = None
     assigned_phone: str | None = None
     assigned_email: str | None = None
+    visibility: Visibility | None = None
     order: int | None = None
 
 
@@ -94,6 +99,7 @@ class EventOut(BaseModel):
     assigned_to: str | None
     assigned_phone: str | None
     assigned_email: str | None
+    visibility: Visibility = "public"
     pick_token: str | None
     pick_token_created_at: str | None
     created_at: str

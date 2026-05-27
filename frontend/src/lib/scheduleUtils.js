@@ -66,6 +66,23 @@ export function parseISO(s) {
   return new Date(y, m - 1, d)
 }
 
+/** Add `n` days to an ISO date string (YYYY-MM-DD), returning a new ISO string. */
+export function addDays(iso, n) {
+  const d = parseISO(iso)
+  if (!d) return iso
+  d.setDate(d.getDate() + n)
+  return isoDate(d)
+}
+
+/** Inclusive day count between two ISO dates (start <= end). */
+export function dayCount(startIso, endIso) {
+  const start = parseISO(startIso)
+  const end = parseISO(endIso || startIso)
+  if (!start || !end) return 1
+  const ms = end.getTime() - start.getTime()
+  return Math.max(1, Math.round(ms / 86_400_000) + 1)
+}
+
 export function formatLongDate(s) {
   const d = parseISO(s)
   if (!d) return '—'

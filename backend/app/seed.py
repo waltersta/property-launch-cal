@@ -29,6 +29,7 @@ def event_from_seed(data: dict, property_id: int = 1) -> Event:
         assigned_to=data.get("assigned_to"),
         assigned_phone=data.get("assigned_phone"),
         assigned_email=data.get("assigned_email"),
+        visibility=data.get("visibility", "public"),
         order=data.get("order", 0),
     )
     ev.date_options = data.get("date_options", [])
@@ -113,6 +114,8 @@ def _migrate_sqlite_columns(engine) -> None:
         event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
         if "property_id" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))
+        if "visibility" not in event_cols:
+            conn.execute(text("ALTER TABLE events ADD COLUMN visibility VARCHAR(16) DEFAULT 'public'"))
         conn.commit()
 
 

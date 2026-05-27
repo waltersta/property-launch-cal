@@ -3,6 +3,7 @@ import {
   Camera,
   Home,
   Key,
+  Lock,
   Megaphone,
   Pencil,
   Trash2,
@@ -112,6 +113,15 @@ export default function Timeline({
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className={`pill ${pillClass}`}>{pillLabel}</span>
+                  {e.visibility === 'admin_only' && (
+                    <span
+                      className="inline-flex items-center gap-1 text-[0.65rem] uppercase tracking-widest border border-zinc-300 bg-zinc-50 px-1.5 py-0.5 text-zinc-600"
+                      title="Admin-only event — hidden from client share"
+                    >
+                      <Lock className="h-3 w-3" />
+                      Admin only
+                    </span>
+                  )}
                   {e.time && (
                     <span className="text-sm font-medium text-zinc-700">{e.time}</span>
                   )}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Lock } from 'lucide-react'
 import { CATEGORIES } from '@/lib/scheduleApi'
 import { Button } from '@/components/ui/button'
 import {
@@ -25,6 +26,7 @@ const empty = {
   assigned_email: '',
   pick_owner: '',
   date_options: [],
+  visibility: 'public',
 }
 
 export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
@@ -71,6 +73,7 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
       pick_owner: form.pick_owner || '',
       time: form.time || null,
       end_time: form.end_time || null,
+      visibility: form.visibility === 'admin_only' ? 'admin_only' : 'public',
     }
     if (requestPick) {
       payload.status = 'awaiting_pick'
@@ -205,6 +208,25 @@ export default function EventDialog({ open, onOpenChange, initial, onSubmit }) {
             <Input value={form.assigned_to} onChange={(e) => update('assigned_to', e.target.value)} placeholder="Name" className="rounded-none" />
             <Input value={form.assigned_phone} onChange={(e) => update('assigned_phone', e.target.value)} placeholder="Phone" className="rounded-none" />
             <Input value={form.assigned_email} onChange={(e) => update('assigned_email', e.target.value)} placeholder="Email" className="rounded-none" />
+          </div>
+          <div className="border-t border-zinc-200 pt-4">
+            <label className="flex items-start gap-3 text-sm font-body cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.visibility === 'admin_only'}
+                onChange={(e) => update('visibility', e.target.checked ? 'admin_only' : 'public')}
+                className="mt-1"
+              />
+              <span className="flex-1">
+                <span className="flex items-center gap-1.5 font-medium text-zinc-900">
+                  <Lock className="h-3.5 w-3.5" />
+                  Visible only to me (admin-only)
+                </span>
+                <span className="block text-xs text-zinc-500 mt-0.5">
+                  Hidden from the client share link, pick links, and the .ics export shown to clients.
+                </span>
+              </span>
+            </label>
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" className="rounded-none" onClick={() => onOpenChange(false)}>

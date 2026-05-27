@@ -3,7 +3,7 @@ import { eventsInCalendarMonth } from '@/lib/scheduleUtils'
 import MonthCalendar from '@/components/schedule/MonthCalendar'
 import ResponsibilityLegend from '@/components/schedule/ResponsibilityLegend'
 
-export default function CalendarStack({ months, events, onSelectDate }) {
+export default function CalendarStack({ months, events, onSelectDate, draggable = false }) {
   return (
     <div className="calendar-print-stack max-w-[8.5in] mx-auto">
       <div className="flex flex-col gap-10 print:gap-8">
@@ -18,6 +18,7 @@ export default function CalendarStack({ months, events, onSelectDate }) {
                 month={month}
                 events={events}
                 onSelectDate={onSelectDate}
+                draggable={draggable}
               />
               <ResponsibilityLegend parties={parties} />
             </div>

@@ -75,6 +75,14 @@ def require_listing_access(
     raise HTTPException(status_code=401, detail="Client passcode required")
 
 
+def is_admin_request(
+    x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
+    db: Session = Depends(get_db),
+) -> bool:
+    """Non-raising helper: True iff the request carries a valid admin token."""
+    return _admin_token_valid(db, x_admin_token)
+
+
 def get_property_config(db: Session) -> PropertyConfig | None:
     """First property — used for admin auth and legacy helpers."""
     return db.query(PropertyConfig).order_by(PropertyConfig.id).first()

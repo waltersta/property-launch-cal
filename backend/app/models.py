@@ -55,6 +55,7 @@ class Event(Base):
     assigned_to: Mapped[str | None] = mapped_column(String(255), nullable=True)
     assigned_phone: Mapped[str | None] = mapped_column(String(64), nullable=True)
     assigned_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    visibility: Mapped[str] = mapped_column(String(16), default="public")
     pick_token: Mapped[str | None] = mapped_column(String(64), nullable=True, unique=True)
     pick_token_created_at: Mapped[str | None] = mapped_column(String(64), nullable=True)
     created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
