@@ -430,26 +430,27 @@ export default function SchedulePage() {
                   <Link2 className="h-4 w-4 mr-1" />
                   Share link
                 </Button>
-                <Button
-                  variant="outline"
-                  className="rounded-none text-xs uppercase tracking-widest"
-                  onClick={() => navigate('/admin/new-listing')}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  {config?.create_property_label || 'New listing'}
-                </Button>
               </>
             )}
+            <Button
+              variant="outline"
+              className="rounded-none text-xs uppercase tracking-widest"
+              onClick={handleExportAll}
+              disabled={!canExport || events.length === 0}
+            >
+              <Download className="h-4 w-4 mr-1" />
+              Export .ics
+            </Button>
           </div>
-          <Button
-            variant="outline"
-            className="rounded-none text-xs uppercase tracking-widest"
-            onClick={handleExportAll}
-            disabled={!canExport || events.length === 0}
-          >
-            <Download className="h-4 w-4 mr-1" />
-            Export .ics
-          </Button>
+          {isAdmin && adminMode && !isShare && (
+            <Button
+              className="rounded-none text-xs uppercase tracking-widest bg-zinc-950 text-white hover:bg-zinc-800"
+              onClick={() => navigate('/admin/new-listing')}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              New
+            </Button>
+          )}
         </div>
       </div>
 
@@ -588,11 +589,13 @@ export default function SchedulePage() {
       </section>
 
       {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-12 sm:pb-16">
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16 border-t-4 border-zinc-300">
+          <p className="section-subhead text-zinc-500 mb-2">04 — Admin</p>
           <ListingAdminPanel
             propertySlug={config.property_slug}
             propertyName={config.property_name}
             listingParties={listingParties}
+            scheduleEmailIntro={config.schedule_email_intro}
             onPartiesSaved={load}
           />
         </section>

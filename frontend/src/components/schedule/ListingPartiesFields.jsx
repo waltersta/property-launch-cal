@@ -23,112 +23,122 @@ export function partiesStateFromConfig(listingParties) {
   }
 }
 
-export default function ListingPartiesFields({ agent, coordinator, clients, onAgentChange, onCoordinatorChange, onClientChange }) {
+function PersonRow({
+  nameLabel,
+  nameId,
+  nameValue,
+  namePlaceholder,
+  onNameChange,
+  emailLabel,
+  emailId,
+  emailValue,
+  onEmailChange,
+  colorLabel = 'Color',
+  colorId,
+  colorValue,
+  onColorChange,
+}) {
   return (
-    <div className="space-y-4">
-      <div className="grid sm:grid-cols-3 gap-3 items-end border-b border-zinc-100 pb-4">
-        <div className="sm:col-span-2">
-          <Label htmlFor="party-agent-name">Agent first name</Label>
-          <Input
-            id="party-agent-name"
-            value={agent.name}
-            onChange={(e) => onAgentChange({ ...agent, name: e.target.value })}
-            className="rounded-none mt-1"
-            placeholder="e.g. Walter"
-          />
-        </div>
+    <div className="space-y-3">
+      <div>
+        <Label htmlFor={nameId}>{nameLabel}</Label>
+        <Input
+          id={nameId}
+          value={nameValue}
+          onChange={onNameChange}
+          className="rounded-none mt-1"
+          placeholder={namePlaceholder}
+        />
+      </div>
+      <div className="grid grid-cols-[1fr_auto] gap-3 items-end">
         <div>
-          <Label htmlFor="party-agent-color">Color</Label>
+          <Label htmlFor={emailId}>{emailLabel}</Label>
           <Input
-            id="party-agent-color"
-            type="color"
-            value={agent.color}
-            onChange={(e) => onAgentChange({ ...agent, color: e.target.value })}
-            className="rounded-none mt-1 h-10 w-full p-1 cursor-pointer"
-          />
-        </div>
-        <div className="sm:col-span-3">
-          <Label htmlFor="party-agent-email">Agent email</Label>
-          <Input
-            id="party-agent-email"
+            id={emailId}
             type="email"
-            value={agent.email}
-            onChange={(e) => onAgentChange({ ...agent, email: e.target.value })}
+            value={emailValue}
+            onChange={onEmailChange}
             className="rounded-none mt-1"
             placeholder="optional"
+          />
+        </div>
+        <div className="min-w-[84px]">
+          <Label htmlFor={colorId}>{colorLabel}</Label>
+          <Input
+            id={colorId}
+            type="color"
+            value={colorValue}
+            onChange={onColorChange}
+            className="rounded-none mt-1 h-10 w-[84px] p-1 cursor-pointer"
           />
         </div>
       </div>
+    </div>
+  )
+}
 
-      <div className="grid sm:grid-cols-3 gap-3 items-end border-b border-zinc-100 pb-4">
-        <div className="sm:col-span-2">
-          <Label htmlFor="party-coordinator-name">Transaction coordinator</Label>
-          <Input
-            id="party-coordinator-name"
-            value={coordinator.name}
-            onChange={(e) => onCoordinatorChange({ ...coordinator, name: e.target.value })}
-            className="rounded-none mt-1"
-            placeholder="Full name"
-          />
-        </div>
-        <div>
-          <Label htmlFor="party-coordinator-color">Color</Label>
-          <Input
-            id="party-coordinator-color"
-            type="color"
-            value={coordinator.color}
-            onChange={(e) => onCoordinatorChange({ ...coordinator, color: e.target.value })}
-            className="rounded-none mt-1 h-10 w-full p-1 cursor-pointer"
-          />
-        </div>
-        <div className="sm:col-span-3">
-          <Label htmlFor="party-coordinator-email">Coordinator email</Label>
-          <Input
-            id="party-coordinator-email"
-            type="email"
-            value={coordinator.email}
-            onChange={(e) => onCoordinatorChange({ ...coordinator, email: e.target.value })}
-            className="rounded-none mt-1"
-            placeholder="optional"
-          />
-        </div>
+export default function ListingPartiesFields({
+  agent,
+  coordinator,
+  clients,
+  onAgentChange,
+  onCoordinatorChange,
+  onClientChange,
+}) {
+  return (
+    <div className="space-y-4">
+      <div className="border-b border-zinc-100 pb-4">
+        <PersonRow
+          nameLabel="Agent first name"
+          nameId="party-agent-name"
+          nameValue={agent.name}
+          namePlaceholder="e.g. Walter"
+          onNameChange={(e) => onAgentChange({ ...agent, name: e.target.value })}
+          emailLabel="Agent email"
+          emailId="party-agent-email"
+          emailValue={agent.email}
+          onEmailChange={(e) => onAgentChange({ ...agent, email: e.target.value })}
+          colorId="party-agent-color"
+          colorValue={agent.color}
+          onColorChange={(e) => onAgentChange({ ...agent, color: e.target.value })}
+        />
+      </div>
+
+      <div className="border-b border-zinc-100 pb-4">
+        <PersonRow
+          nameLabel="Transaction coordinator"
+          nameId="party-coordinator-name"
+          nameValue={coordinator.name}
+          namePlaceholder="Full name"
+          onNameChange={(e) => onCoordinatorChange({ ...coordinator, name: e.target.value })}
+          emailLabel="Coordinator email"
+          emailId="party-coordinator-email"
+          emailValue={coordinator.email}
+          onEmailChange={(e) => onCoordinatorChange({ ...coordinator, email: e.target.value })}
+          colorId="party-coordinator-color"
+          colorValue={coordinator.color}
+          onColorChange={(e) => onCoordinatorChange({ ...coordinator, color: e.target.value })}
+        />
       </div>
 
       <div className="space-y-3">
         <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Clients (max {MAX_CLIENTS})</p>
         {clients.map((row, index) => (
-          <div key={index} className="grid sm:grid-cols-4 gap-2 items-end">
-            <div className="sm:col-span-2">
-              <Label htmlFor={`party-client-name-${index}`}>Client {index + 1} name</Label>
-              <Input
-                id={`party-client-name-${index}`}
-                value={row.name}
-                onChange={(e) => onClientChange(index, 'name', e.target.value)}
-                className="rounded-none mt-1"
-                placeholder={index === 0 ? 'e.g. Smith family' : 'optional'}
-              />
-            </div>
-            <div>
-              <Label htmlFor={`party-client-email-${index}`}>Email</Label>
-              <Input
-                id={`party-client-email-${index}`}
-                type="email"
-                value={row.email}
-                onChange={(e) => onClientChange(index, 'email', e.target.value)}
-                className="rounded-none mt-1"
-                placeholder="optional"
-              />
-            </div>
-            <div>
-              <Label htmlFor={`party-client-color-${index}`}>Color</Label>
-              <Input
-                id={`party-client-color-${index}`}
-                type="color"
-                value={row.color}
-                onChange={(e) => onClientChange(index, 'color', e.target.value)}
-                className="rounded-none mt-1 h-10 w-full p-1 cursor-pointer"
-              />
-            </div>
+          <div key={index} className="border-b border-zinc-100 pb-4">
+            <PersonRow
+              nameLabel={`Client ${index + 1} name`}
+              nameId={`party-client-name-${index}`}
+              nameValue={row.name}
+              namePlaceholder={index === 0 ? 'e.g. Smith family' : 'optional'}
+              onNameChange={(e) => onClientChange(index, 'name', e.target.value)}
+              emailLabel="Email"
+              emailId={`party-client-email-${index}`}
+              emailValue={row.email}
+              onEmailChange={(e) => onClientChange(index, 'email', e.target.value)}
+              colorId={`party-client-color-${index}`}
+              colorValue={row.color}
+              onColorChange={(e) => onClientChange(index, 'color', e.target.value)}
+            />
           </div>
         ))}
       </div>

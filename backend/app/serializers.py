@@ -12,6 +12,7 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         tagline=cfg.tagline,
         schedule_type_label=cfg.schedule_type_label or "Listing schedule",
         create_property_label=cfg.create_property_label or "New listing",
+        schedule_email_intro=cfg.schedule_email_intro or "",
         launch_date_label=cfg.launch_date_label,
         hero_image_url=cfg.hero_image_url,
         header_image_url=cfg.header_image_url,

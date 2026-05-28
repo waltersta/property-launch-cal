@@ -120,7 +120,7 @@ export function parseUtcTimestamp(iso) {
   if (!iso) return null
   const s = String(iso).trim()
   if (!s) return null
-  if (/[zZ]$/.test(s) || /[+-]\d]{2}:\d{2}$/.test(s)) {
+  if (/[zZ]$/.test(s) || /[+-]\d{2}:\d{2}$/.test(s)) {
     const d = new Date(s)
     return Number.isNaN(d.getTime()) ? null : d
   }
