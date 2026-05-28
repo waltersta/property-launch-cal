@@ -188,49 +188,48 @@ export default function Timeline({
               )}
 
               {(e.assigned_to || (pending && e.pick_owner)) && (
-                <div className="ml-8 mb-4 text-sm font-body flex flex-wrap items-center gap-x-2 gap-y-1">
-                  <span className="overline text-zinc-400 shrink-0">With</span>
-                  {pending && e.pick_owner && (
-                    <>
-                      <span className="font-medium text-zinc-950">{displayPickOwner(e.pick_owner, listingParties)}</span>
-                      {e.assigned_to && e.assigned_to !== e.pick_owner && (
-                        <span className="text-zinc-400" aria-hidden>
-                          ·
-                        </span>
-                      )}
-                    </>
-                  )}
-                  {e.assigned_to && (
-                    <>
-                      <span className="font-medium text-zinc-950">{e.assigned_to}</span>
-                      {e.assigned_phone && (
-                        <>
-                          <span className="text-zinc-300 hidden sm:inline" aria-hidden>
-                            ·
-                          </span>
-                          <a
-                            href={`tel:${e.assigned_phone}`}
-                            className="text-zinc-600 hover:text-zinc-950 whitespace-nowrap"
-                          >
-                            {e.assigned_phone}
-                          </a>
-                        </>
-                      )}
+                <div className="ml-8 mb-4 text-sm font-body">
+                  <div className="flex items-start gap-2">
+                    <span className="overline text-zinc-400 shrink-0 mt-0.5">With</span>
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                        {pending && e.pick_owner && (
+                          <span className="font-medium text-zinc-950">{displayPickOwner(e.pick_owner, listingParties)}</span>
+                        )}
+                        {e.assigned_to && (
+                          <>
+                            {pending && e.pick_owner && e.assigned_to !== e.pick_owner && (
+                              <span className="text-zinc-300" aria-hidden>
+                                ·
+                              </span>
+                            )}
+                            <span className="font-medium text-zinc-950">{e.assigned_to}</span>
+                          </>
+                        )}
+                        {e.assigned_phone && (
+                          <>
+                            <span className="text-zinc-300" aria-hidden>
+                              ·
+                            </span>
+                            <a
+                              href={`tel:${e.assigned_phone}`}
+                              className="text-zinc-600 hover:text-zinc-950 whitespace-nowrap"
+                            >
+                              {e.assigned_phone}
+                            </a>
+                          </>
+                        )}
+                      </div>
                       {e.assigned_email && (
-                        <>
-                          <span className="text-zinc-300 hidden sm:inline" aria-hidden>
-                            ·
-                          </span>
-                          <a
-                            href={`mailto:${e.assigned_email}`}
-                            className="text-zinc-600 hover:text-zinc-950 break-all sm:break-normal"
-                          >
-                            {e.assigned_email}
-                          </a>
-                        </>
+                        <a
+                          href={`mailto:${e.assigned_email}`}
+                          className="mt-0.5 block text-zinc-600 hover:text-zinc-950 break-all sm:break-normal"
+                        >
+                          {e.assigned_email}
+                        </a>
                       )}
-                    </>
-                  )}
+                    </div>
+                  </div>
                 </div>
               )}
 

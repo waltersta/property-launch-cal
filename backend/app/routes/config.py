@@ -18,6 +18,7 @@ def _default_config_out() -> ConfigOut:
         client_auth_required=False,
         property_name="Property",
         tagline="New Listing",
+        schedule_email_intro="Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________).",
         launch_date_label="",
         hero_image_url="",
         header_image_url="",

@@ -16,8 +16,33 @@ async function copyText(url, label) {
   }
 }
 
-export default function ListingAdminPanel({ propertySlug, propertyName, listingParties, onPartiesSaved }) {
+function composeScheduleEmail(scheduleUrl, propertyName, listingParties, introText) {
+  const recipients = (listingParties?.clients || [])
+    .map((c) => (c?.email || '').trim())
+    .filter(Boolean)
+  const coordinatorName = (listingParties?.coordinator?.name || '').trim() || 'the transaction coordinator'
+  const coordinatorEmail = (listingParties?.coordinator?.email || '').trim() || 'not provided'
+  const subject = encodeURIComponent(`${propertyName || 'Property'} schedule`)
+  const defaultIntro = "Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________)."
+  let intro = (introText || '').trim() || defaultIntro
+  intro = intro
+    .replace(/<p>/gi, '\n\n')
+    .replace('_______', coordinatorName)
+    .replace('___________', coordinatorEmail)
+  const body = encodeURIComponent(`${intro}\n\n${scheduleUrl}`)
+  const to = encodeURIComponent(recipients.join(','))
+  return `mailto:${to}?subject=${subject}&body=${body}`
+}
+
+export default function ListingAdminPanel({
+  propertySlug,
+  propertyName,
+  listingParties,
+  scheduleEmailIntro,
+  onPartiesSaved,
+}) {
   const [clientPasscode, setClientPasscode] = useState('')
+  const [emailIntro, setEmailIntro] = useState('')
   const [savingPasscode, setSavingPasscode] = useState(false)
   const [links, setLinks] = useState(null)
   const [linksLoading, setLinksLoading] = useState(true)
@@ -40,6 +65,13 @@ export default function ListingAdminPanel({ propertySlug, propertyName, listingP
     loadLinks()
   }, [loadLinks])
 
+  useEffect(() => {
+    setEmailIntro(
+      scheduleEmailIntro
+        || "Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________).",
+    )
+  }, [scheduleEmailIntro])
+
   const saveClientPasscode = async () => {
     if (!propertySlug) return
     setSavingPasscode(true)
@@ -52,6 +84,17 @@ export default function ListingAdminPanel({ propertySlug, propertyName, listingP
       toast.error('Could not update passcode')
     } finally {
       setSavingPasscode(false)
+    }
+  }
+
+  const saveEmailIntro = async () => {
+    if (!propertySlug) return
+    try {
+      await api.updateConfig(propertySlug, { schedule_email_intro: emailIntro })
+      toast.success('Email intro saved')
+      onPartiesSaved?.()
+    } catch {
+      toast.error('Could not save email intro')
     }
   }
 
@@ -107,7 +150,7 @@ export default function ListingAdminPanel({ propertySlug, propertyName, listingP
         <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client links</p>
           <p className="text-sm text-zinc-600 font-body leading-snug">
-            <strong>Schedule link</strong> — full calendar for clients (same as the Share link in the toolbar).
+            <strong>Schedule link</strong> — opens an email draft to all client emails with the full calendar link.
             <strong className="font-normal"> Pick-a-date link</strong> — only for one “awaiting preference” event;
             client chooses among that event’s date options.
           </p>
@@ -117,14 +160,35 @@ export default function ListingAdminPanel({ propertySlug, propertyName, listingP
             <>
               <div className="space-y-2">
                 <p className="text-xs text-zinc-600 font-body">Full schedule</p>
+                <Label htmlFor="schedule-email-intro" className="text-xs text-zinc-600 font-body">
+                  Email intro text
+                </Label>
+                <textarea
+                  id="schedule-email-intro"
+                  value={emailIntro}
+                  onChange={(e) => setEmailIntro(e.target.value)}
+                  rows={4}
+                  className="w-full rounded-none border border-zinc-300 px-3 py-2 text-sm font-body"
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="rounded-none text-xs uppercase tracking-widest"
+                  onClick={saveEmailIntro}
+                >
+                  Save intro
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   className="rounded-none w-full text-xs uppercase tracking-widest"
-                  onClick={() => copyText(links.schedule_url, 'Schedule link')}
+                  onClick={() => {
+                    const href = composeScheduleEmail(links.schedule_url, propertyName, listingParties, emailIntro)
+                    window.location.href = href
+                  }}
                 >
                   <Link2 className="h-3.5 w-3.5 mr-1.5" />
-                  Copy schedule link
+                  Email schedule link
                 </Button>
               </div>
               {pick ? (
