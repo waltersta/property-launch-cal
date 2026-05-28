@@ -507,9 +507,9 @@ export default function SchedulePage() {
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
         {lastModifiedAt && (
           <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
-            <p className="as-of-stamp font-bold text-zinc-950">
-              <span className="as-of-label">As of </span>
-              {formatDateTime(lastModifiedAt)}
+            <p className="as-of-line">
+              <span className="as-of-label">As of</span>
+              <span className="as-of-datetime">{formatDateTime(lastModifiedAt)}</span>
             </p>
           </div>
         )}
@@ -531,7 +531,8 @@ export default function SchedulePage() {
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
             Click a blank day to add an event. Hover a chip for details; double-click to jump to the timeline.
-            Drag a chip to move it (long-press on touch). Mark done in the timeline or event editor.
+            Drag a chip to move it (long-press on touch). In the timeline, hover the blue calendar icon for Add to
+            calendar. Mark done in the timeline or event editor.
           </p>
         )}
 

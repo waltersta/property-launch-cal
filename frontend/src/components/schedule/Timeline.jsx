@@ -117,16 +117,26 @@ export default function Timeline({
                 </div>
                 <div className="flex gap-1 items-center shrink-0 ml-auto">
                   {showAddToCal && (
-                    <button
-                      type="button"
-                      onClick={() => handleAddToCal(e)}
-                      title="Add to calendar"
-                      className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 rounded-sm hover:bg-blue-50"
-                      data-testid={`add-to-calendar-${e.id}`}
-                      aria-label="Add to calendar"
-                    >
-                      <Calendar className="h-4 w-4" />
-                    </button>
+                    <span className="relative inline-flex group/add-cal">
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCal(e)}
+                        title="Add to calendar"
+                        className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 rounded-sm hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600"
+                        data-testid={`add-to-calendar-${e.id}`}
+                        aria-label="Add to calendar"
+                        aria-describedby={`add-to-calendar-tip-${e.id}`}
+                      >
+                        <Calendar className="h-4 w-4" aria-hidden />
+                      </button>
+                      <span
+                        id={`add-to-calendar-tip-${e.id}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute right-0 top-full z-30 mt-1 whitespace-nowrap border border-zinc-200 bg-white px-2 py-1 text-[0.65rem] font-body text-zinc-700 shadow-md opacity-0 transition-opacity duration-150 group-hover/add-cal:opacity-100 group-focus-within/add-cal:opacity-100"
+                      >
+                        Add to calendar
+                      </span>
+                    </span>
                   )}
                   {isAdmin && (
                     <>

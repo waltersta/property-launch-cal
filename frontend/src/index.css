@@ -91,17 +91,50 @@ body {
   border-color: #dbeafe;
 }
 
-.as-of-stamp {
-  font-family: 'Lucida Console', 'Lucida Sans Typewriter', Monaco, 'Courier New', monospace;
-  font-size: 0.8125rem;
-  letter-spacing: 0.02em;
+.as-of-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.4em;
+  margin: 0;
 }
 
 .as-of-label {
   font-family: 'Switzer', sans-serif;
   font-size: 0.875rem;
   font-weight: 500;
+  line-height: 1.2;
   letter-spacing: normal;
+  color: #09090b;
+}
+
+/* Rubber-stamp / stenciled date-time — intentionally imperfect */
+.as-of-datetime {
+  display: inline-block;
+  font-family: 'Special Elite', 'American Typewriter', 'Courier New', monospace;
+  font-size: 0.95rem;
+  font-weight: 400;
+  line-height: 1.15;
+  letter-spacing: 0.04em;
+  color: #3f3f46;
+  opacity: 0.9;
+  transform: rotate(-1.25deg) translateY(1px);
+  text-shadow:
+    0.03em 0.04em 0 rgba(24, 24, 27, 0.28),
+    -0.02em 0.02em 0 rgba(24, 24, 27, 0.12),
+    0.01em -0.01em 0 rgba(24, 24, 27, 0.08);
+  filter: contrast(1.12) saturate(0.85);
+}
+
+@media print {
+  .as-of-datetime {
+    transform: none;
+    opacity: 1;
+    filter: none;
+    text-shadow: none;
+    color: #18181b;
+  }
 }
 
 .font-cal-narrow {
