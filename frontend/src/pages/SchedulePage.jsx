@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Download, Link2, Plus } from 'lucide-react'
+import { ChevronDown, Download, Link2, MousePointer2, MousePointerClick, MoveRight, Plus } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
@@ -50,6 +50,9 @@ export default function SchedulePage() {
   const [pickOpen, setPickOpen] = useState(false)
   const [loadError, setLoadError] = useState(null)
   const [headerImgFailed, setHeaderImgFailed] = useState(false)
+  const [dealCalendars, setDealCalendars] = useState([])
+  const [dealsLoading, setDealsLoading] = useState(false)
+  const [showDealMenu, setShowDealMenu] = useState(false)
 
   const loadListingData = useCallback(async (slug) => {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
@@ -115,6 +118,24 @@ export default function SchedulePage() {
       setUnlockOpen(true)
     }
   }, [adminMode, isAdmin])
+
+  const loadDealCalendars = useCallback(async () => {
+    if (!isAdmin || isShare) return
+    setDealsLoading(true)
+    try {
+      const rows = await api.listProperties()
+      setDealCalendars(rows || [])
+    } catch {
+      toast.error('Could not load deal calendars')
+    } finally {
+      setDealsLoading(false)
+    }
+  }, [isAdmin, isShare])
+
+  useEffect(() => {
+    if (!isAdmin || isShare) return
+    loadDealCalendars()
+  }, [isAdmin, isShare, loadDealCalendars])
 
   const tzid = config?.tzid || 'America/Los_Angeles'
 
@@ -349,6 +370,14 @@ export default function SchedulePage() {
   const canExport = isShare || isAdmin
   const awaitingPickEvent = events.find((e) => e.status === 'awaiting_pick')
 
+  const handleSelectDeal = useCallback((slug) => {
+    const next = new URLSearchParams(searchParams)
+    next.delete('view')
+    next.set('property', slug)
+    setShowDealMenu(false)
+    setSearchParams(next)
+  }, [searchParams, setSearchParams])
+
   return (
     <div className="min-h-screen bg-white" id="top">
       <Toaster position="top-center" />
@@ -383,9 +412,42 @@ export default function SchedulePage() {
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
           </p>
-          <h1 className="font-property-title text-3xl sm:text-4xl text-white tracking-tight leading-tight">
-            {propertyName}
-          </h1>
+          <div className="relative inline-block">
+            {isAdmin && !isShare ? (
+              <button
+                type="button"
+                onClick={() => setShowDealMenu((v) => !v)}
+                className="inline-flex items-center gap-2 font-property-title text-3xl sm:text-4xl text-white tracking-tight leading-tight hover:text-white/90"
+              >
+                {propertyName}
+                <ChevronDown className="h-5 w-5 opacity-85" />
+              </button>
+            ) : (
+              <h1 className="font-property-title text-3xl sm:text-4xl text-white tracking-tight leading-tight">
+                {propertyName}
+              </h1>
+            )}
+            {isAdmin && !isShare && showDealMenu && (
+              <div className="absolute left-0 mt-2 min-w-[260px] max-h-64 overflow-auto border border-zinc-300 bg-white shadow-lg z-30">
+                {dealsLoading ? (
+                  <p className="px-3 py-2 text-sm text-zinc-500">Loading deals…</p>
+                ) : (
+                  dealCalendars.map((row) => (
+                    <button
+                      key={row.property_slug}
+                      type="button"
+                      onClick={() => handleSelectDeal(row.property_slug)}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-zinc-50 ${
+                        row.property_slug === config?.property_slug ? 'bg-zinc-100 text-zinc-950' : 'text-zinc-700'
+                      }`}
+                    >
+                      {row.property_name}
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
           <p className="font-body text-white/90 mt-4 text-lg">
             {config?.tagline || 'New Listing'}
             {config?.launch_date_label && (
@@ -511,9 +573,22 @@ export default function SchedulePage() {
             ? `${calendarMonths[0] && new Date(calendarMonths[0].year, calendarMonths[0].month).toLocaleString('en-US', { month: 'long' })} & ${calendarMonths[calendarMonths.length - 1] && new Date(calendarMonths[calendarMonths.length - 1].year, calendarMonths[calendarMonths.length - 1].month).toLocaleString('en-US', { month: 'long' })} ${calendarMonths[0]?.year}`
             : 'Schedule'}
         </h2>
-        <p className="font-body text-zinc-500 mb-6 text-sm">
-          Click any dated cell to jump to the event in the timeline.
-        </p>
+        <div className="font-body text-zinc-500 mb-6 text-sm space-y-1">
+          <p className="inline-flex items-center gap-1.5">
+            <MousePointerClick className="h-3.5 w-3.5" />
+            Double-clicking on an event jumps to the event in the timeline.
+          </p>
+          <p className="inline-flex items-center gap-1.5">
+            <MousePointer2 className="h-3.5 w-3.5" />
+            Hovering over an event provides details about the event.
+          </p>
+          {canDragCalendar && (
+            <p className="inline-flex items-center gap-1.5 print:hidden">
+              <MoveRight className="h-3.5 w-3.5" />
+              Drag and drop an event to move it to a different day.
+            </p>
+          )}
+        </div>
 
         <p className="font-body text-zinc-500 mb-6 text-sm print:hidden">
           Colors show who must be on site (legend under each month).
@@ -522,9 +597,8 @@ export default function SchedulePage() {
 
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
-            Click a blank day to add an event. Hover a chip for details; double-click to jump to the timeline.
-            Drag a chip to move it (long-press on touch). In the timeline, hover the blue calendar icon for Add to
-            calendar. Mark done in the timeline or event editor.
+            Click a blank day to add an event. Long-press on touch to start dragging. In the timeline, hover the blue
+            calendar icon for Add to calendar. Mark done in the timeline or event editor.
           </p>
         )}
 
@@ -605,11 +679,11 @@ export default function SchedulePage() {
         <p>
           {propertyName} · {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || ''}
         </p>
-        <p className="mt-1 text-xs">
-          {isShare
-            ? 'Shared client view — pick your date when prompted.'
-            : 'Toggle Admin → listing settings and client links are at the bottom of the page.'}
-        </p>
+        {isShare ? (
+          <p className="mt-1 text-xs">Shared client view — pick your date when prompted.</p>
+        ) : isAdmin ? (
+          <p className="mt-1 text-xs">Toggle Admin to edit the schedule; transaction settings are at the bottom of the page.</p>
+        ) : null}
       </footer>
 
       <AdminUnlockDialog
