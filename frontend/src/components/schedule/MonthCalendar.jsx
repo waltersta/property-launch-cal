@@ -85,6 +85,7 @@ function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip,
 
   const handlePointerDown = draggable
     ? (e) => {
+        hideTip()
         e.stopPropagation()
         drag.startDrag(e, event, isoForCell)
       }
@@ -96,7 +97,7 @@ function EventChip({ event, isoForCell, drag, onScrollToEvent, showTip, hideTip,
   }
 
   const handleMouseEnter = (e) => {
-    if (draggable && drag?.isDragging) return
+    if (draggable && (drag?.isDragging || drag?.pressedId)) return
     const rect = e.currentTarget.getBoundingClientRect()
     showTip({ event, rect })
   }

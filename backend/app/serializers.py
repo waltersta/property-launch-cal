@@ -23,6 +23,7 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         calendar_month_start=cfg.calendar_month_start,
         calendar_month_end=cfg.calendar_month_end,
         listing_parties=parse_listing_parties(cfg.listing_parties_json),
+        updated_at=cfg.updated_at or "",
     )
 
 

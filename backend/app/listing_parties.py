@@ -10,10 +10,21 @@ def _first_name_only(name: str) -> str:
 
 DEFAULT_LISTING_PARTIES: dict[str, Any] = {
     "agent": {"name": "Walter", "email": "", "color": "#e0e7ff"},
+    "coordinator": {"name": "", "email": "", "color": "#ddd6fe"},
     "clients": [{"name": "Client", "email": "", "color": "#fef3c7"}],
 }
 
 MAX_CLIENTS = 4
+
+
+def _parse_person(raw: dict | None, defaults: dict) -> dict[str, str]:
+    raw = raw if isinstance(raw, dict) else {}
+    return {
+        "name": str(raw.get("name") or defaults.get("name") or "").strip(),
+        "email": str(raw.get("email") or "").strip(),
+        "color": str(raw.get("color") or defaults.get("color") or "#fef3c7").strip()
+        or defaults.get("color", "#fef3c7"),
+    }
 
 
 def parse_listing_parties(raw: str | None) -> dict[str, Any]:
@@ -24,6 +35,7 @@ def parse_listing_parties(raw: str | None) -> dict[str, Any]:
     except json.JSONDecodeError:
         return json.loads(json.dumps(DEFAULT_LISTING_PARTIES))
     agent = data.get("agent") if isinstance(data.get("agent"), dict) else {}
+    coordinator = data.get("coordinator") if isinstance(data.get("coordinator"), dict) else {}
     clients_in = data.get("clients") if isinstance(data.get("clients"), list) else []
     clients = []
     for item in clients_in[:MAX_CLIENTS]:
@@ -40,6 +52,7 @@ def parse_listing_parties(raw: str | None) -> dict[str, Any]:
             }
         )
     agent_raw = str(agent.get("name") or DEFAULT_LISTING_PARTIES["agent"]["name"]).strip()
+    coord = _parse_person(coordinator, DEFAULT_LISTING_PARTIES["coordinator"])
     return {
         "agent": {
             "name": _first_name_only(agent_raw) or DEFAULT_LISTING_PARTIES["agent"]["name"],
@@ -47,6 +60,7 @@ def parse_listing_parties(raw: str | None) -> dict[str, Any]:
             "color": str(agent.get("color") or DEFAULT_LISTING_PARTIES["agent"]["color"]).strip()
             or DEFAULT_LISTING_PARTIES["agent"]["color"],
         },
+        "coordinator": coord,
         "clients": clients or list(DEFAULT_LISTING_PARTIES["clients"]),
     }
 

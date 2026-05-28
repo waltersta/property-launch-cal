@@ -115,17 +115,30 @@ export function sharpImageUrl(url, width = 2400) {
   }
 }
 
-/** Latest `updated_at` across events and notes (schedule last modified). */
-export function scheduleLastModified(events, notes) {
+/** Parse backend ISO timestamps as UTC (naive strings are treated as UTC). */
+export function parseUtcTimestamp(iso) {
+  if (!iso) return null
+  const s = String(iso).trim()
+  if (!s) return null
+  if (/[zZ]$/.test(s) || /[+-]\d]{2}:\d{2}$/.test(s)) {
+    const d = new Date(s)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const d = new Date(`${s}Z`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** Latest `updated_at` across events, notes, and optional config stamp. */
+export function scheduleLastModified(events, notes, configUpdatedAt = null) {
   let latest = null
   const consider = (iso) => {
-    if (!iso) return
-    const d = new Date(iso)
-    if (Number.isNaN(d.getTime())) return
+    const d = parseUtcTimestamp(iso)
+    if (!d) return
     if (!latest || d > latest) latest = d
   }
   for (const e of events || []) consider(e.updated_at)
   for (const n of notes || []) consider(n.updated_at)
+  consider(configUpdatedAt)
   return latest
 }
 
@@ -141,19 +154,21 @@ export function rescheduleDatesForDrop(event, targetIso) {
   }
 }
 
-export function formatDateTime(date) {
-  if (!date) return ''
-  const d = date instanceof Date ? date : new Date(date)
-  if (Number.isNaN(d.getTime())) return ''
+export function formatDateTime(date, timeZone) {
+  const d = date instanceof Date ? date : parseUtcTimestamp(date)
+  if (!d || Number.isNaN(d.getTime())) return ''
+  const opts = timeZone ? { timeZone } : {}
   const datePart = d.toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
     year: 'numeric',
+    ...opts,
   })
   const timePart = d.toLocaleTimeString('en-US', {
     hour: 'numeric',
     minute: '2-digit',
     hour12: true,
+    ...opts,
   })
   return `${datePart} at ${timePart}`
 }

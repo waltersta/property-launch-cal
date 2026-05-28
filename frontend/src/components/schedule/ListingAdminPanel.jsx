@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
-import ScheduleBrandingPanel from '@/components/schedule/ScheduleBrandingPanel'
 
 async function copyText(url, label) {
   try {
@@ -17,16 +16,7 @@ async function copyText(url, label) {
   }
 }
 
-export default function ListingAdminPanel({
-  propertySlug,
-  propertyName,
-  listingParties,
-  scheduleTypeLabel,
-  tagline,
-  createPropertyLabel,
-  onPartiesSaved,
-  onBrandingSaved,
-}) {
+export default function ListingAdminPanel({ propertySlug, propertyName, listingParties, onPartiesSaved }) {
   const [clientPasscode, setClientPasscode] = useState('')
   const [savingPasscode, setSavingPasscode] = useState(false)
   const [links, setLinks] = useState(null)
@@ -57,6 +47,7 @@ export default function ListingAdminPanel({
       await api.updateConfig(propertySlug, { client_passcode: clientPasscode })
       toast.success(clientPasscode ? 'Client passcode set' : 'Client passcode removed')
       setClientPasscode('')
+      onPartiesSaved?.()
     } catch {
       toast.error('Could not update passcode')
     } finally {
@@ -70,22 +61,15 @@ export default function ListingAdminPanel({
     <div className="border border-zinc-200 bg-zinc-50 p-4 sm:p-5" data-testid="listing-admin-panel">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
         <div>
-          <p className="overline text-zinc-500 mb-0.5">Listing admin</p>
+          <p className="overline text-zinc-500 mb-0.5">Transaction admin</p>
           <h3 className="font-display text-xl font-light tracking-tight text-zinc-950">
-            {propertyName || 'This listing'}
+            {propertyName || 'This transaction'}
           </h3>
         </div>
         <code className="text-xs text-zinc-500 font-mono">?property={propertySlug}</code>
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <ScheduleBrandingPanel
-          propertySlug={propertySlug}
-          scheduleTypeLabel={scheduleTypeLabel}
-          tagline={tagline}
-          createPropertyLabel={createPropertyLabel}
-          onSaved={onBrandingSaved}
-        />
         <ListingPartiesPanel
           propertySlug={propertySlug}
           listingParties={listingParties}
@@ -120,8 +104,13 @@ export default function ListingAdminPanel({
           </Button>
         </div>
 
-        <div className="bg-white border border-zinc-200 p-4 space-y-3">
-          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Send to client</p>
+        <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2">
+          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client links</p>
+          <p className="text-sm text-zinc-600 font-body leading-snug">
+            <strong>Schedule link</strong> — full calendar for clients (same as the Share link in the toolbar).
+            <strong className="font-normal"> Pick-a-date link</strong> — only for one “awaiting preference” event;
+            client chooses among that event’s date options.
+          </p>
           {linksLoading ? (
             <p className="text-sm text-zinc-500 font-body">Loading links…</p>
           ) : links ? (
@@ -141,7 +130,7 @@ export default function ListingAdminPanel({
               {pick ? (
                 <div className="space-y-2 pt-2 border-t border-zinc-100">
                   <p className="text-xs text-zinc-600 font-body">
-                    Pick-a-date · <strong>{pick.title}</strong>
+                    Pick-a-date only · <strong>{pick.title}</strong>
                   </p>
                   <Button
                     size="sm"

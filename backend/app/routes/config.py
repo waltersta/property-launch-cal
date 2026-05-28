@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 
 from ..auth import require_admin, set_client_passcode
 from ..database import get_db
-from ..models import PropertyConfig
+from ..models import PropertyConfig, utcnow
 from ..property import resolve_property
 from ..schemas import ConfigOut, ConfigUpdate
 from ..listing_parties import dump_listing_parties
@@ -64,6 +64,7 @@ def update_config(
         cfg.listing_parties_json = dump_listing_parties(data.pop("listing_parties"))
     for key, value in data.items():
         setattr(cfg, key, value)
+    cfg.updated_at = utcnow().isoformat()
     db.commit()
     db.refresh(cfg)
     return config_to_out(cfg)

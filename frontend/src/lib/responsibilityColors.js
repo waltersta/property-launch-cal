@@ -2,6 +2,7 @@ import { AGENT_NAME, isTwoPartyKeyEvent } from '@/lib/scheduleUtils'
 import {
   agentDisplayName,
   clientDisplayNames,
+  coordinatorDisplayName,
   DEFAULT_LISTING_PARTIES,
   firstNameOnly,
 } from '@/lib/listingParties'
@@ -40,6 +41,11 @@ function partyColorFromConfig(name, listingParties) {
   const agentName = agentDisplayName(parties)
   if (namesMatch(name, agentName) && parties.agent?.color) {
     const bg = parties.agent.color
+    return { bg, text: textOnBg(bg), label: name }
+  }
+  const coord = parties.coordinator
+  if (coord?.name && namesMatch(name, coord.name) && coord.color) {
+    const bg = coord.color
     return { bg, text: textOnBg(bg), label: name }
   }
   for (const c of parties.clients || []) {

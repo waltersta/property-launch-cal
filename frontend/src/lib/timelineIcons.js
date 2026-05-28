@@ -1,9 +1,9 @@
-import { Calendar, Camera, Home, Key, Megaphone } from 'lucide-react'
+import { Calendar, Camera, Home, Key, Megaphone, Sofa } from 'lucide-react'
 
 const CAT_ICON = {
   keys: Key,
   inspection: Home,
-  staging: Home,
+  staging: Sofa,
   photo: Camera,
   listing: Megaphone,
   general: Calendar,

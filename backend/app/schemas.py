@@ -11,6 +11,7 @@ class PartyPerson(BaseModel):
 
 class ListingParties(BaseModel):
     agent: PartyPerson = Field(default_factory=PartyPerson)
+    coordinator: PartyPerson = Field(default_factory=PartyPerson)
     clients: list[PartyPerson] = Field(default_factory=list)
 
 
@@ -32,6 +33,7 @@ class ConfigOut(BaseModel):
     calendar_month_start: int
     calendar_month_end: int
     listing_parties: ListingParties = Field(default_factory=ListingParties)
+    updated_at: str = ""
 
 
 class ConfigUpdate(BaseModel):
@@ -193,7 +195,10 @@ class PropertyCreate(BaseModel):
     property_name: str
     property_slug: str | None = None
     tagline: str = "New Listing"
+    schedule_type_label: str = "Listing schedule"
+    create_property_label: str = "New listing"
     client_passcode: str | None = None
+    listing_parties: ListingParties | None = None
 
 
 class PropertySummary(BaseModel):

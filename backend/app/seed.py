@@ -121,6 +121,8 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(
                 text("ALTER TABLE property_config ADD COLUMN create_property_label VARCHAR(128) DEFAULT 'New listing'")
             )
+        if "updated_at" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN updated_at VARCHAR(64) DEFAULT ''"))
         event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
         if "property_id" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))

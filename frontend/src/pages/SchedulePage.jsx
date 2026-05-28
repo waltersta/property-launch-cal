@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Download, Link2, Plus, RotateCcw } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Download, Link2, Plus } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
@@ -23,7 +23,6 @@ import EventDialog from '@/components/schedule/EventDialog'
 import PickDateDialog from '@/components/schedule/PickDateDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
-import CreateListingDialog from '@/components/schedule/CreateListingDialog'
 import ListingAdminPanel from '@/components/schedule/ListingAdminPanel'
 import NotesSection from '@/components/schedule/NotesSection'
 import PickNotifications from '@/components/schedule/PickNotifications'
@@ -31,6 +30,7 @@ import { getClientToken } from '@/lib/clientAuth'
 import { buildScheduleShareUrl } from '@/lib/shareUrls'
 
 export default function SchedulePage() {
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const isShare = searchParams.get('view') === 'share'
   const propertyParam = searchParams.get('property')
@@ -49,7 +49,6 @@ export default function SchedulePage() {
   const [pickEvent, setPickEvent] = useState(null)
   const [pickOpen, setPickOpen] = useState(false)
   const [loadError, setLoadError] = useState(null)
-  const [createListingOpen, setCreateListingOpen] = useState(false)
   const [headerImgFailed, setHeaderImgFailed] = useState(false)
 
   const loadListingData = useCallback(async (slug) => {
@@ -146,8 +145,8 @@ export default function SchedulePage() {
   }, [config])
 
   const lastModifiedAt = useMemo(
-    () => scheduleLastModified(events, notes),
-    [events, notes],
+    () => scheduleLastModified(events, notes, config?.updated_at),
+    [events, notes, config?.updated_at],
   )
 
   const listingParties = useMemo(
@@ -269,17 +268,6 @@ export default function SchedulePage() {
       load()
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Could not submit pick')
-    }
-  }
-
-  const handleReset = async () => {
-    if (!window.confirm('Reset all events to demo data?')) return
-    try {
-      await api.reset(config?.property_slug)
-      toast.success('Schedule reset to demo')
-      load()
-    } catch {
-      toast.error('Could not reset')
     }
   }
 
@@ -442,14 +430,10 @@ export default function SchedulePage() {
                   <Link2 className="h-4 w-4 mr-1" />
                   Share link
                 </Button>
-                <Button variant="outline" className="rounded-none text-xs" onClick={handleReset}>
-                  <RotateCcw className="h-4 w-4 mr-1" />
-                  Reset demo
-                </Button>
                 <Button
                   variant="outline"
                   className="rounded-none text-xs uppercase tracking-widest"
-                  onClick={() => setCreateListingOpen(true)}
+                  onClick={() => navigate('/admin/new-listing')}
                 >
                   <Plus className="h-4 w-4 mr-1" />
                   {config?.create_property_label || 'New listing'}
@@ -471,18 +455,25 @@ export default function SchedulePage() {
 
       <PickNotifications enabled={isAdmin && adminMode && !isShare} onPickReceived={load} />
 
-      <CreateListingDialog
-        open={createListingOpen}
-        onOpenChange={setCreateListingOpen}
-        dialogTitle={config?.create_property_label || 'New listing'}
-        onCreated={(row) => {
-          const next = new URLSearchParams(searchParams)
-          next.delete('view')
-          next.set('property', row.property_slug)
-          setSearchParams(next, { replace: true })
-          setAdminMode(true)
-        }}
-      />
+      {isAdmin && adminMode && !isShare && awaitingPickEvent && (
+        <div className="bg-amber-50 border-b border-amber-200">
+          <div className="max-w-7xl mx-auto px-6 sm:px-10 py-4 flex flex-wrap items-center justify-between gap-3">
+            <p className="font-body text-sm text-amber-950">
+              <strong>{displayPickOwner(awaitingPickEvent.pick_owner, listingParties)}</strong> is choosing a date for{' '}
+              <strong>{eventDisplayName(awaitingPickEvent)}</strong> ({(awaitingPickEvent.date_options || []).length} options).
+            </p>
+            <Button
+              className="rounded-none text-xs uppercase tracking-widest shrink-0"
+              onClick={() => {
+                setPickEvent(awaitingPickEvent)
+                setPickOpen(true)
+              }}
+            >
+              Confirm date
+            </Button>
+          </div>
+        </div>
+      )}
 
       {isShare && awaitingPickEvent && (
         <div className="bg-amber-50 border-b border-amber-200">
@@ -508,8 +499,8 @@ export default function SchedulePage() {
         {lastModifiedAt && (
           <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
             <p className="as-of-line">
-              <span className="as-of-label">As of</span>
-              <span className="as-of-datetime">{formatDateTime(lastModifiedAt)}</span>
+              <span className="as-of-label">Last updated:</span>
+              <span className="as-of-datetime">{formatDateTime(lastModifiedAt, tzid)}</span>
             </p>
           </div>
         )}
@@ -602,11 +593,7 @@ export default function SchedulePage() {
             propertySlug={config.property_slug}
             propertyName={config.property_name}
             listingParties={listingParties}
-            scheduleTypeLabel={config.schedule_type_label}
-            tagline={config.tagline}
-            createPropertyLabel={config.create_property_label}
             onPartiesSaved={load}
-            onBrandingSaved={load}
           />
         </section>
       )}
@@ -650,6 +637,7 @@ export default function SchedulePage() {
         open={pickOpen}
         onOpenChange={setPickOpen}
         event={pickEvent}
+        isAdmin={isAdmin && adminMode && !isShare}
         onSubmit={handlePick}
       />
 

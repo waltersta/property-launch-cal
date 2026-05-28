@@ -244,17 +244,15 @@ export default function Timeline({
                 </div>
               )}
 
-              {(pending && isShare) || (isAdmin && pending) ? (
+              {pending && (isShare || isAdmin) ? (
                 <div className="ml-8 flex flex-wrap gap-3">
-                  {pending && isShare && (
-                    <Button
-                      className="rounded-none uppercase tracking-widest text-xs"
-                      onClick={() => onPickRequested(e)}
-                    >
-                      Pick a date
-                    </Button>
-                  )}
-                  {isAdmin && pending && (
+                  <Button
+                    className="rounded-none uppercase tracking-widest text-xs"
+                    onClick={() => onPickRequested(e)}
+                  >
+                    {isAdmin && !isShare ? 'Confirm date' : 'Pick a date'}
+                  </Button>
+                  {isAdmin && !isShare && pending && (
                     <Button
                       variant="outline"
                       className="rounded-none text-xs"

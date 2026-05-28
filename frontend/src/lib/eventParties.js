@@ -1,4 +1,9 @@
-import { agentDisplayName, clientDisplayNames, firstNameOnly } from '@/lib/listingParties'
+import {
+  agentDisplayName,
+  clientDisplayNames,
+  coordinatorDisplayName,
+  firstNameOnly,
+} from '@/lib/listingParties'
 
 function partyNamesMatch(a, b) {
   if (!a || !b) return false
@@ -9,10 +14,13 @@ import { isTwoPartyKeyEvent } from '@/lib/scheduleUtils'
 
 /** All selectable party names for an event (agent + clients). */
 export function partyChoices(listingParties) {
-  const agent = agentDisplayName(listingParties)
-  const clients = clientDisplayNames(listingParties)
-  const names = [agent, ...clients.filter((n) => n !== agent)]
-  return [...new Set(names)]
+  const names = [agentDisplayName(listingParties)]
+  const coord = coordinatorDisplayName(listingParties)
+  if (coord) names.push(coord)
+  for (const c of clientDisplayNames(listingParties)) {
+    if (!names.includes(c)) names.push(c)
+  }
+  return names
 }
 
 export function alignPartyNames(names, listingParties) {

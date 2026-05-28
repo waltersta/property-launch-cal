@@ -2,6 +2,7 @@ export const MAX_CLIENTS = 4
 
 export const DEFAULT_LISTING_PARTIES = {
   agent: { name: 'Walter', email: '', color: '#e0e7ff' },
+  coordinator: { name: '', email: '', color: '#ddd6fe' },
   clients: [{ name: 'Client', email: '', color: '#fef3c7' }],
 }
 
@@ -19,6 +20,7 @@ export function normalizeListingParties(raw) {
     return structuredClone(DEFAULT_LISTING_PARTIES)
   }
   const agent = raw.agent && typeof raw.agent === 'object' ? raw.agent : {}
+  const coordinator = raw.coordinator && typeof raw.coordinator === 'object' ? raw.coordinator : {}
   const clientsIn = Array.isArray(raw.clients) ? raw.clients : []
   const clients = []
   for (const item of clientsIn) {
@@ -39,11 +41,16 @@ export function normalizeListingParties(raw) {
       email: String(agent.email || '').trim(),
       color: String(agent.color || DEFAULT_LISTING_PARTIES.agent.color).trim() || DEFAULT_LISTING_PARTIES.agent.color,
     },
+    coordinator: {
+      name: String(coordinator.name || '').trim(),
+      email: String(coordinator.email || '').trim(),
+      color: String(coordinator.color || DEFAULT_LISTING_PARTIES.coordinator.color).trim()
+        || DEFAULT_LISTING_PARTIES.coordinator.color,
+    },
     clients: clients.length ? clients : structuredClone(DEFAULT_LISTING_PARTIES.clients),
   }
 }
 
-/** Four editable rows (blank slots allowed in the form). */
 export function clientFormRows(parties) {
   const filled = [...(parties?.clients || [])]
   while (filled.length < MAX_CLIENTS) {
@@ -56,7 +63,7 @@ export function clientFormRows(parties) {
   return filled.slice(0, MAX_CLIENTS)
 }
 
-export function partiesForSave(agent, clientRows) {
+export function partiesForSave(agent, coordinator, clientRows) {
   const clients = clientRows
     .map((row) => ({
       name: String(row.name || '').trim(),
@@ -70,6 +77,11 @@ export function partiesForSave(agent, clientRows) {
       email: String(agent.email || '').trim(),
       color: String(agent.color || '').trim() || DEFAULT_LISTING_PARTIES.agent.color,
     },
+    coordinator: {
+      name: String(coordinator?.name || '').trim(),
+      email: String(coordinator?.email || '').trim(),
+      color: String(coordinator?.color || '').trim() || DEFAULT_LISTING_PARTIES.coordinator.color,
+    },
     clients: clients.length ? clients : DEFAULT_LISTING_PARTIES.clients,
   }
 }
@@ -77,6 +89,10 @@ export function partiesForSave(agent, clientRows) {
 export function agentDisplayName(parties) {
   const raw = parties?.agent?.name?.trim() || DEFAULT_LISTING_PARTIES.agent.name
   return firstNameOnly(raw) || DEFAULT_LISTING_PARTIES.agent.name
+}
+
+export function coordinatorDisplayName(parties) {
+  return parties?.coordinator?.name?.trim() || ''
 }
 
 export function clientDisplayNames(parties) {

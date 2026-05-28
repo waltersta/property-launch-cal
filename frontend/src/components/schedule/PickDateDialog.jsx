@@ -12,7 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { formatLongDate } from '@/lib/scheduleUtils'
 
-export default function PickDateDialog({ open, onOpenChange, event, onSubmit }) {
+export default function PickDateDialog({ open, onOpenChange, event, onSubmit, isAdmin = false }) {
   const [selected, setSelected] = useState('')
   const [name, setName] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -31,10 +31,11 @@ export default function PickDateDialog({ open, onOpenChange, event, onSubmit }) 
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!selected || !name.trim()) return
+    if (!selected) return
+    if (!isAdmin && !name.trim()) return
     setSubmitting(true)
     try {
-      await onSubmit({ date: selected, picked_by: name.trim() })
+      await onSubmit({ date: selected, picked_by: name.trim() || 'Admin' })
       onOpenChange(false)
     } finally {
       setSubmitting(false)
@@ -46,10 +47,11 @@ export default function PickDateDialog({ open, onOpenChange, event, onSubmit }) 
       <DialogContent className="rounded-none border-zinc-300 sm:max-w-md" data-testid="pick-date-dialog">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl font-light tracking-tight">
-            Pick your preferred date
+            {isAdmin ? 'Confirm date' : 'Pick your preferred date'}
           </DialogTitle>
           <DialogDescription className="font-body">
             {event.title} — choose one of the options below.
+            {isAdmin && ' Recording on behalf of the client.'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -77,11 +79,11 @@ export default function PickDateDialog({ open, onOpenChange, event, onSubmit }) 
             </div>
           </div>
           <div>
-            <Label htmlFor="pick-name">Your name</Label>
+            <Label htmlFor="pick-name">{isAdmin ? 'Recorded as (optional)' : 'Your name'}</Label>
             <Input
               id="pick-name"
-              required
-              placeholder="e.g. Client"
+              required={!isAdmin}
+              placeholder={isAdmin ? 'e.g. Smith family' : 'e.g. Client'}
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="mt-1 rounded-none"
@@ -94,7 +96,7 @@ export default function PickDateDialog({ open, onOpenChange, event, onSubmit }) 
             <Button
               type="submit"
               className="rounded-none"
-              disabled={submitting || !name.trim() || !selected}
+              disabled={submitting || !selected || (!isAdmin && !name.trim())}
             >
               Confirm date
             </Button>

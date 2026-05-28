@@ -3,7 +3,8 @@ from sqlalchemy.orm import Session
 
 from ..auth import ensure_passcode_hash, hash_passcode, require_admin, set_client_passcode
 from ..database import get_db
-from ..models import PropertyConfig
+from ..listing_parties import dump_listing_parties
+from ..models import PropertyConfig, utcnow
 from ..property import SLUG_RE, resolve_property, slugify_property
 from ..schemas import PropertyCreate, PropertySummary
 from ..seed import load_seed_data
@@ -50,6 +51,8 @@ def create_property(
         property_name=body.property_name.strip(),
         property_slug=slug,
         tagline=body.tagline,
+        schedule_type_label=body.schedule_type_label or "Listing schedule",
+        create_property_label=body.create_property_label or "New listing",
         launch_date_label="",
         hero_image_url="",
         header_image_url="/header.png",
@@ -62,6 +65,14 @@ def create_property(
         admin_passcode_hash=admin_hash,
     )
     set_client_passcode(cfg, body.client_passcode)
+    if body.listing_parties is not None:
+        parties_data = (
+            body.listing_parties.model_dump()
+            if hasattr(body.listing_parties, "model_dump")
+            else body.listing_parties
+        )
+        cfg.listing_parties_json = dump_listing_parties(parties_data)
+    cfg.updated_at = utcnow().isoformat()
     db.add(cfg)
     db.commit()
     db.refresh(cfg)
