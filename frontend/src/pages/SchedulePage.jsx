@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronDown, Download, Link2, MousePointer2, MousePointerClick, MoveRight, Plus } from 'lucide-react'
+import { ChevronDown, Download, Link2, Mail, MousePointer2, MousePointerClick, MoveRight, Plus } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
@@ -27,6 +27,7 @@ import ListingAdminPanel from '@/components/schedule/ListingAdminPanel'
 import NotesSection from '@/components/schedule/NotesSection'
 import PickNotifications from '@/components/schedule/PickNotifications'
 import { getClientToken } from '@/lib/clientAuth'
+import { composeScheduleEmail } from '@/lib/scheduleEmail'
 import { buildScheduleShareUrl } from '@/lib/shareUrls'
 
 export default function SchedulePage() {
@@ -196,9 +197,25 @@ export default function SchedulePage() {
     const url = buildScheduleShareUrl(window.location.origin, config?.property_slug)
     try {
       await navigator.clipboard.writeText(url)
-      toast.success('Client share link copied')
+      toast.success('Link copied')
     } catch {
-      window.prompt('Copy this share link:', url)
+      window.prompt('Copy this link:', url)
+    }
+  }
+
+  const handleSendScheduleLink = async () => {
+    if (!config?.property_slug) return
+    try {
+      const links = await api.getClientLinks(config.property_slug)
+      const href = composeScheduleEmail(
+        links.schedule_url,
+        config.property_name,
+        listingParties,
+        config.schedule_email_intro,
+      )
+      window.location.href = href
+    } catch {
+      toast.error('Could not open email draft')
     }
   }
 
@@ -488,9 +505,13 @@ export default function SchedulePage() {
                   <Plus className="h-4 w-4 mr-1" />
                   Add event
                 </Button>
-                <Button variant="outline" className="rounded-none text-xs" onClick={handleCopyShareLink}>
+                <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={handleCopyShareLink}>
                   <Link2 className="h-4 w-4 mr-1" />
-                  Share link
+                  Copy link
+                </Button>
+                <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={handleSendScheduleLink}>
+                  <Mail className="h-4 w-4 mr-1" />
+                  Send link
                 </Button>
               </>
             )}

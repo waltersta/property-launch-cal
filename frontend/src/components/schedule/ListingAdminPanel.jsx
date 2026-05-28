@@ -6,6 +6,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
+import {
+  composeScheduleEmail,
+  DEFAULT_SCHEDULE_EMAIL_INTRO,
+  fillCoordinatorInIntro,
+  stripCoordinatorFromIntro,
+} from '@/lib/scheduleEmail'
 
 async function copyText(url, label) {
   try {
@@ -14,24 +20,6 @@ async function copyText(url, label) {
   } catch {
     window.prompt(`Copy this link:`, url)
   }
-}
-
-function composeScheduleEmail(scheduleUrl, propertyName, listingParties, introText) {
-  const recipients = (listingParties?.clients || [])
-    .map((c) => (c?.email || '').trim())
-    .filter(Boolean)
-  const coordinatorName = (listingParties?.coordinator?.name || '').trim() || 'the transaction coordinator'
-  const coordinatorEmail = (listingParties?.coordinator?.email || '').trim() || 'not provided'
-  const subject = encodeURIComponent(`${propertyName || 'Property'} schedule`)
-  const defaultIntro = "Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________)."
-  let intro = (introText || '').trim() || defaultIntro
-  intro = intro
-    .replace(/<p>/gi, '\n\n')
-    .replace('_______', coordinatorName)
-    .replace('___________', coordinatorEmail)
-  const body = encodeURIComponent(`${intro}\n\n${scheduleUrl}`)
-  const to = encodeURIComponent(recipients.join(','))
-  return `mailto:${to}?subject=${subject}&body=${body}`
 }
 
 export default function ListingAdminPanel({
@@ -66,10 +54,7 @@ export default function ListingAdminPanel({
   }, [loadLinks])
 
   useEffect(() => {
-    setEmailIntro(
-      scheduleEmailIntro
-        || "Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________).",
-    )
+    setEmailIntro(scheduleEmailIntro || DEFAULT_SCHEDULE_EMAIL_INTRO)
   }, [scheduleEmailIntro])
 
   const saveClientPasscode = async () => {
@@ -148,7 +133,7 @@ export default function ListingAdminPanel({
         </div>
 
         <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2">
-          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client links</p>
+          <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Link for client</p>
           <p className="text-sm text-zinc-600 font-body leading-snug">
             <strong>Schedule link</strong> — opens an email draft to all client emails with the full calendar link.
             <strong className="font-normal"> Pick-a-date link</strong> — only for one “awaiting preference” event;
@@ -170,6 +155,33 @@ export default function ListingAdminPanel({
                   rows={4}
                   className="w-full rounded-none border border-zinc-300 px-3 py-2 text-sm font-body"
                 />
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none text-xs uppercase tracking-widest"
+                    onClick={() => {
+                      const { intro, ok } = fillCoordinatorInIntro(emailIntro, listingParties)
+                      if (!ok) {
+                        toast.error('Add a transaction coordinator name in Parties first')
+                        return
+                      }
+                      setEmailIntro(intro)
+                    }}
+                  >
+                    Fill in TC
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-none text-xs uppercase tracking-widest"
+                    onClick={() => setEmailIntro(stripCoordinatorFromIntro(emailIntro))}
+                  >
+                    No TC
+                  </Button>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"

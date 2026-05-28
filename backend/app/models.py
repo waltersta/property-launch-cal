@@ -23,7 +23,7 @@ class PropertyConfig(Base):
     create_property_label: Mapped[str] = mapped_column(String(128), default="New listing")
     schedule_email_intro: Mapped[str] = mapped_column(
         Text,
-        default="Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy. <P> Our transaction coordinator is _______ (email: _____________).",
+        default="Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy.<P>Our transaction coordinator is _______ (email: _____________).",
     )
     launch_date_label: Mapped[str] = mapped_column(String(128), default="")
     hero_image_url: Mapped[str] = mapped_column(Text, default="")
