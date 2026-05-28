@@ -370,13 +370,13 @@ export default function SchedulePage() {
   const canExport = isShare || isAdmin
   const awaitingPickEvent = events.find((e) => e.status === 'awaiting_pick')
 
-  const handleSelectDeal = useCallback((slug) => {
+  const handleSelectDeal = (slug) => {
     const next = new URLSearchParams(searchParams)
     next.delete('view')
     next.set('property', slug)
     setShowDealMenu(false)
     setSearchParams(next)
-  }, [searchParams, setSearchParams])
+  }
 
   return (
     <div className="min-h-screen bg-white" id="top">
