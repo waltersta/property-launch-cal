@@ -1,28 +1,11 @@
-import {
-  Calendar,
-  Camera,
-  Home,
-  Key,
-  Lock,
-  Megaphone,
-  Pencil,
-  Trash2,
-} from 'lucide-react'
+import { Calendar, Pencil, Trash2, Lock } from 'lucide-react'
 import api, { effectiveSortDate } from '@/lib/scheduleApi'
 import { displayPickOwner } from '@/lib/responsibilityColors'
 import { formatLongDate, parseISO, timelineEventTitle } from '@/lib/scheduleUtils'
 import { eventToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { buildPickUrl } from '@/lib/shareUrls'
+import { timelineIconForEvent } from '@/lib/timelineIcons'
 import { Button } from '@/components/ui/button'
-
-const CAT_ICON = {
-  keys: Key,
-  inspection: Home,
-  staging: Home,
-  photo: Camera,
-  listing: Megaphone,
-  general: Calendar,
-}
 
 function dateColumn(e) {
   if (e.status === 'awaiting_pick') {
@@ -71,7 +54,7 @@ export default function Timeline({
   return (
     <ol className="timeline space-y-8 pt-2" data-testid="timeline">
       {sorted.map((e) => {
-        const Icon = CAT_ICON[e.category] || Calendar
+        const Icon = timelineIconForEvent(e)
         const pending = e.status === 'awaiting_pick'
         const col = dateColumn(e)
         const pillClass =
@@ -82,6 +65,7 @@ export default function Timeline({
             : e.status === 'picked'
               ? 'Confirmed'
               : 'Awaiting preference'
+        const showAddToCal = !pending && e.date
 
         return (
           <li
@@ -113,7 +97,7 @@ export default function Timeline({
 
             <div className="border border-zinc-200 bg-white p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                   <span className={`pill ${pillClass}`}>{pillLabel}</span>
                   {e.visibility === 'admin_only' && (
                     <span
@@ -131,30 +115,54 @@ export default function Timeline({
                     <span className="text-sm text-zinc-500">through {formatLongDate(e.end_date).replace(/, \d{4}$/, '')}</span>
                   )}
                 </div>
-                {isAdmin && (
-                  <div className="flex gap-2 items-center">
-                    <label className="flex items-center gap-1.5 text-xs text-zinc-600 font-body cursor-pointer mr-1">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(e.completed)}
-                        onChange={() => onToggleComplete?.(e)}
-                        aria-label="Mark completed"
-                      />
-                      Done
-                    </label>
-                    <Button variant="ghost" size="sm" className="rounded-none h-8 px-2" onClick={() => onEdit(e)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="rounded-none h-8 px-2 text-red-600 hover:text-red-700"
-                      onClick={() => onDelete(e)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                )}
+                <div className="flex gap-1 items-center shrink-0 ml-auto">
+                  {showAddToCal && (
+                    <span className="relative inline-flex group/add-cal">
+                      <button
+                        type="button"
+                        onClick={() => handleAddToCal(e)}
+                        title="Add to calendar"
+                        className="inline-flex items-center justify-center p-1.5 text-blue-600 hover:text-blue-800 rounded-sm hover:bg-blue-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-blue-600"
+                        data-testid={`add-to-calendar-${e.id}`}
+                        aria-label="Add to calendar"
+                        aria-describedby={`add-to-calendar-tip-${e.id}`}
+                      >
+                        <Calendar className="h-4 w-4" aria-hidden />
+                      </button>
+                      <span
+                        id={`add-to-calendar-tip-${e.id}`}
+                        role="tooltip"
+                        className="pointer-events-none absolute right-0 top-full z-30 mt-1 whitespace-nowrap border border-zinc-200 bg-white px-2 py-1 text-[0.65rem] font-body text-zinc-700 shadow-md opacity-0 transition-opacity duration-150 group-hover/add-cal:opacity-100 group-focus-within/add-cal:opacity-100"
+                      >
+                        Add to calendar
+                      </span>
+                    </span>
+                  )}
+                  {isAdmin && (
+                    <>
+                      <label className="flex items-center gap-1.5 text-xs text-zinc-600 font-body cursor-pointer px-1">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(e.completed)}
+                          onChange={() => onToggleComplete?.(e)}
+                          aria-label="Mark completed"
+                        />
+                        Done
+                      </label>
+                      <Button variant="ghost" size="sm" className="rounded-none h-8 px-2" onClick={() => onEdit(e)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-none h-8 px-2 text-red-600 hover:text-red-700"
+                        onClick={() => onDelete(e)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-start gap-3 mb-2">
@@ -168,14 +176,16 @@ export default function Timeline({
                   {timelineEventTitle(e)}
                 </h4>
               </div>
-              <p className="font-body text-zinc-600 text-sm sm:text-base mb-4 ml-8">
-                {pending && (
-                  <span className="font-display font-semibold text-amber-700 mr-1" title="Awaiting preference">
-                    ?
-                  </span>
-                )}
-                {e.description}
-              </p>
+              {(e.description || pending) && (
+                <p className="font-body text-zinc-600 text-sm sm:text-base mb-4 ml-8">
+                  {pending && (
+                    <span className="font-display font-semibold text-amber-700 mr-1" title="Awaiting preference">
+                      ?
+                    </span>
+                  )}
+                  {e.description}
+                </p>
+              )}
 
               {(e.assigned_to || (pending && e.pick_owner)) && (
                 <div className="ml-8 mb-4 text-sm font-body flex flex-wrap items-center gap-x-2 gap-y-1">
@@ -234,40 +244,32 @@ export default function Timeline({
                 </div>
               )}
 
-              <div className="ml-8 flex flex-wrap gap-3">
-                {pending && isShare && (
-                  <Button
-                    className="rounded-none uppercase tracking-widest text-xs"
-                    onClick={() => onPickRequested(e)}
-                  >
-                    Pick a date
-                  </Button>
-                )}
-                {!pending && e.date && (
-                  <Button
-                    variant="outline"
-                    className="rounded-none uppercase tracking-widest text-xs"
-                    onClick={() => handleAddToCal(e)}
-                    data-testid={`add-to-calendar-${e.id}`}
-                  >
-                    Add to calendar
-                  </Button>
-                )}
-                {isAdmin && pending && (
-                  <Button
-                    variant="outline"
-                    className="rounded-none text-xs"
-                    onClick={async () => {
-                      const { pick_token } = await api.generatePickToken(e.id)
-                      const url = buildPickUrl(window.location.origin, pick_token, propertySlug)
-                      await navigator.clipboard.writeText(url)
-                      onChanged?.()
-                    }}
-                  >
-                    Copy pick link
-                  </Button>
-                )}
-              </div>
+              {(pending && isShare) || (isAdmin && pending) ? (
+                <div className="ml-8 flex flex-wrap gap-3">
+                  {pending && isShare && (
+                    <Button
+                      className="rounded-none uppercase tracking-widest text-xs"
+                      onClick={() => onPickRequested(e)}
+                    >
+                      Pick a date
+                    </Button>
+                  )}
+                  {isAdmin && pending && (
+                    <Button
+                      variant="outline"
+                      className="rounded-none text-xs"
+                      onClick={async () => {
+                        const { pick_token } = await api.generatePickToken(e.id)
+                        const url = buildPickUrl(window.location.origin, pick_token, propertySlug)
+                        await navigator.clipboard.writeText(url)
+                        onChanged?.()
+                      }}
+                    >
+                      Copy pick link
+                    </Button>
+                  )}
+                </div>
+              ) : null}
             </div>
           </li>
         )

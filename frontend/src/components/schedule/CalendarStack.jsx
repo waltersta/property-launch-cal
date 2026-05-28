@@ -22,6 +22,7 @@ export default function CalendarStack({
         {months.map(({ year, month }) => {
           const monthEvents = eventsInCalendarMonth(events, year, month)
           const parties = collectPartiesFromEvents(monthEvents, listingParties)
+          const hasAwaitingPick = monthEvents.some((e) => e.status === 'awaiting_pick')
 
           return (
             <div key={`${year}-${month}`} className="month-calendar-block">
@@ -37,7 +38,11 @@ export default function CalendarStack({
                 adminCreate={adminCreate}
                 listingParties={listingParties}
               />
-              <ResponsibilityLegend parties={parties} listingParties={listingParties} />
+              <ResponsibilityLegend
+                parties={parties}
+                listingParties={listingParties}
+                hasAwaitingPick={hasAwaitingPick}
+              />
             </div>
           )
         })}

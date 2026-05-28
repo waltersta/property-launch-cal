@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
+import ScheduleBrandingPanel from '@/components/schedule/ScheduleBrandingPanel'
 
 async function copyText(url, label) {
   try {
@@ -16,7 +17,16 @@ async function copyText(url, label) {
   }
 }
 
-export default function ListingAdminPanel({ propertySlug, propertyName, listingParties, onPartiesSaved }) {
+export default function ListingAdminPanel({
+  propertySlug,
+  propertyName,
+  listingParties,
+  scheduleTypeLabel,
+  tagline,
+  createPropertyLabel,
+  onPartiesSaved,
+  onBrandingSaved,
+}) {
   const [clientPasscode, setClientPasscode] = useState('')
   const [savingPasscode, setSavingPasscode] = useState(false)
   const [links, setLinks] = useState(null)
@@ -69,6 +79,13 @@ export default function ListingAdminPanel({ propertySlug, propertyName, listingP
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
+        <ScheduleBrandingPanel
+          propertySlug={propertySlug}
+          scheduleTypeLabel={scheduleTypeLabel}
+          tagline={tagline}
+          createPropertyLabel={createPropertyLabel}
+          onSaved={onBrandingSaved}
+        />
         <ListingPartiesPanel
           propertySlug={propertySlug}
           listingParties={listingParties}

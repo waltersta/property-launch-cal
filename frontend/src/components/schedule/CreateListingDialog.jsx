@@ -12,7 +12,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
-export default function CreateListingDialog({ open, onOpenChange, onCreated }) {
+export default function CreateListingDialog({ open, onOpenChange, onCreated, dialogTitle = 'New listing' }) {
   const [newName, setNewName] = useState('')
   const [newSlug, setNewSlug] = useState('')
   const [newClientPass, setNewClientPass] = useState('')
@@ -55,7 +55,7 @@ export default function CreateListingDialog({ open, onOpenChange, onCreated }) {
     >
       <DialogContent className="rounded-none sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="font-display font-light tracking-tight">New listing</DialogTitle>
+          <DialogTitle className="font-display font-light tracking-tight">{dialogTitle}</DialogTitle>
           <DialogDescription className="font-body">
             Creates a new property schedule. You will switch to that listing in admin view.
           </DialogDescription>

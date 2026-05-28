@@ -5,7 +5,7 @@ import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
 import { displayPickOwner } from '@/lib/responsibilityColors'
-import { agentDisplayName, clientNamesLabel, normalizeListingParties } from '@/lib/listingParties'
+import { normalizeListingParties } from '@/lib/listingParties'
 import { useCalendarDrag } from '@/lib/useCalendarDrag'
 import {
   eventDisplayName,
@@ -103,7 +103,7 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (config?.property_name) {
-      document.title = `${config.property_name} · Listing Schedule`
+      document.title = `${config.property_name} · ${config.schedule_type_label || 'Listing schedule'}`
     }
   }, [config?.property_name])
 
@@ -390,7 +390,7 @@ export default function SchedulePage() {
       >
         <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 pb-10 sm:pb-14 pt-24">
           <p className="overline text-white/70 mb-3">
-            Listing schedule · {config?.calendar_year || new Date().getFullYear()}
+            {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || new Date().getFullYear()}
             {!isShare && adminMode && isAdmin && (
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
@@ -452,7 +452,7 @@ export default function SchedulePage() {
                   onClick={() => setCreateListingOpen(true)}
                 >
                   <Plus className="h-4 w-4 mr-1" />
-                  New listing
+                  {config?.create_property_label || 'New listing'}
                 </Button>
               </>
             )}
@@ -471,20 +471,10 @@ export default function SchedulePage() {
 
       <PickNotifications enabled={isAdmin && adminMode && !isShare} onPickReceived={load} />
 
-      {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-4 pb-2">
-          <ListingAdminPanel
-            propertySlug={config.property_slug}
-            propertyName={config.property_name}
-            listingParties={listingParties}
-            onPartiesSaved={load}
-          />
-        </section>
-      )}
-
       <CreateListingDialog
         open={createListingOpen}
         onOpenChange={setCreateListingOpen}
+        dialogTitle={config?.create_property_label || 'New listing'}
         onCreated={(row) => {
           const next = new URLSearchParams(searchParams)
           next.delete('view')
@@ -517,8 +507,9 @@ export default function SchedulePage() {
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
         {lastModifiedAt && (
           <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
-            <p className="as-of-stamp font-bold text-zinc-950">
-              As of {formatDateTime(lastModifiedAt)}
+            <p className="as-of-line">
+              <span className="as-of-label">As of</span>
+              <span className="as-of-datetime">{formatDateTime(lastModifiedAt)}</span>
             </p>
           </div>
         )}
@@ -533,14 +524,15 @@ export default function SchedulePage() {
         </p>
 
         <p className="font-body text-zinc-500 mb-6 text-sm print:hidden">
-          Colors show who must be on site (legend under each month). Split = {agentDisplayName(listingParties)} and{' '}
-          {clientNamesLabel(listingParties)} for key handover. ? = client still choosing a date.
+          Colors show who must be on site (legend under each month).
+          {stats.awaiting > 0 && ' ? = a client is still choosing a date.'}
         </p>
 
         {canDragCalendar && (
           <p className="font-body text-zinc-500 mb-4 text-xs print:hidden">
             Click a blank day to add an event. Hover a chip for details; double-click to jump to the timeline.
-            Drag a chip to move it (long-press on touch). Mark done in the timeline or event editor.
+            Drag a chip to move it (long-press on touch). In the timeline, hover the blue calendar icon for Add to
+            calendar. Mark done in the timeline or event editor.
           </p>
         )}
 
@@ -604,14 +596,29 @@ export default function SchedulePage() {
         />
       </section>
 
+      {isAdmin && adminMode && !isShare && config && (
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-12 sm:pb-16">
+          <ListingAdminPanel
+            propertySlug={config.property_slug}
+            propertyName={config.property_name}
+            listingParties={listingParties}
+            scheduleTypeLabel={config.schedule_type_label}
+            tagline={config.tagline}
+            createPropertyLabel={config.create_property_label}
+            onPartiesSaved={load}
+            onBrandingSaved={load}
+          />
+        </section>
+      )}
+
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 font-body">
         <p>
-          {propertyName} · Listing schedule · {config?.calendar_year || ''}
+          {propertyName} · {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || ''}
         </p>
         <p className="mt-1 text-xs">
           {isShare
             ? 'Shared client view — pick your date when prompted.'
-            : 'Toggle Admin → copy client links under “Send to client”. You are notified when a date is picked.'}
+            : 'Toggle Admin → listing settings and client links are at the bottom of the page.'}
         </p>
       </footer>
 
