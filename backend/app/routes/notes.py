@@ -1,14 +1,21 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from ..auth import require_admin
+from ..auth import assert_property_admin, require_admin
 from ..database import get_db
-from ..models import ScheduleNote, utcnow
+from ..models import PropertyConfig, ScheduleNote, utcnow
 from ..property import require_listing_access, resolve_property
 from ..schemas import NoteCreate, NoteOut, NoteUpdate
 from ..serializers import note_to_out
 
 router = APIRouter(prefix="/notes", tags=["notes"])
+
+
+def _cfg_for_note(db: Session, note: ScheduleNote) -> PropertyConfig:
+    cfg = db.get(PropertyConfig, note.property_id)
+    if not cfg:
+        raise HTTPException(status_code=404, detail="Property not found")
+    return cfg
 
 
 @router.get("", response_model=list[NoteOut])
@@ -30,9 +37,10 @@ def create_note(
     body: NoteCreate,
     property: str | None = Query(None),
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
     count = db.query(ScheduleNote).filter(ScheduleNote.property_id == cfg.id).count()
     note = ScheduleNote(
         property_id=cfg.id,
@@ -53,11 +61,12 @@ def update_note(
     note_id: str,
     body: NoteUpdate,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     note = db.get(ScheduleNote, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
+    assert_property_admin(_cfg_for_note(db, note), ctx)
     data = body.model_dump(exclude_unset=True)
     for key, value in data.items():
         setattr(note, key, value)
@@ -71,11 +80,12 @@ def update_note(
 def delete_note(
     note_id: str,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     note = db.get(ScheduleNote, note_id)
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
+    assert_property_admin(_cfg_for_note(db, note), ctx)
     db.delete(note)
     db.commit()
     return {"ok": True}

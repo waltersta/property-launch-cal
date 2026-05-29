@@ -5,36 +5,15 @@ from sqlalchemy.orm import Session
 
 from sqlalchemy import text
 
+from .agent_service import assign_unowned_properties, ensure_super_agent
 from .auth import ensure_passcode_hash
 from .links import ensure_pick_token
+from .event_factory import event_from_seed
 from .models import Event, PropertyConfig, ScheduleNote, utcnow
 from .property import slugify_property
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "seed.json"
 DEFAULT_HEADER_IMAGE_URL = "/header.png"
-
-
-def event_from_seed(data: dict, property_id: int = 1) -> Event:
-    ev = Event(
-        property_id=property_id,
-        title=data["title"],
-        description=data.get("description", ""),
-        category=data.get("category", "general"),
-        status=data.get("status", "confirmed"),
-        date=data.get("date"),
-        end_date=data.get("end_date"),
-        time=data.get("time"),
-        end_time=data.get("end_time"),
-        pick_owner=data.get("pick_owner"),
-        assigned_to=data.get("assigned_to"),
-        assigned_phone=data.get("assigned_phone"),
-        assigned_email=data.get("assigned_email"),
-        visibility=data.get("visibility", "public"),
-        order=data.get("order", 0),
-    )
-    ev.date_options = data.get("date_options", [])
-    ev.pick_history = []
-    return ev
 
 
 def load_seed_data() -> dict:
@@ -52,9 +31,11 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
         db.delete(existing)
         db.flush()
 
+    super_agent = ensure_super_agent(db)
     property_name = cfg_data.get("property_name", "Property")
     cfg = PropertyConfig(
         id=1,
+        agent_id=super_agent.id,
         property_slug=cfg_data.get("property_slug") or slugify_property(property_name),
         property_name=property_name,
         tagline=cfg_data.get("tagline", "New Listing"),
@@ -125,6 +106,32 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN schedule_email_intro TEXT DEFAULT ''"))
         if "updated_at" not in cols:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN updated_at VARCHAR(64) DEFAULT ''"))
+        if "deal_type" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN deal_type VARCHAR(16) DEFAULT 'listing'"))
+        if "event_presets_json" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN event_presets_json TEXT DEFAULT ''"))
+        if "category_presets_json" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN category_presets_json TEXT DEFAULT ''"))
+        if "agent_id" not in cols:
+            conn.execute(text("ALTER TABLE property_config ADD COLUMN agent_id INTEGER"))
+        agent_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(agents)"))}
+        if not agent_cols:
+            conn.execute(
+                text(
+                    "CREATE TABLE IF NOT EXISTS agents ("
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, "
+                    "name VARCHAR(128) DEFAULT 'Agent', "
+                    "email VARCHAR(255) DEFAULT '', "
+                    "invite_token VARCHAR(64) NOT NULL UNIQUE, "
+                    "is_super_admin BOOLEAN DEFAULT 0, "
+                    "onboarding_completed_at VARCHAR(64) DEFAULT '', "
+                    "created_at VARCHAR(64) DEFAULT ''"
+                    ")"
+                )
+            )
+        admin_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(admin_tokens)"))}
+        if "agent_id" not in admin_cols:
+            conn.execute(text("ALTER TABLE admin_tokens ADD COLUMN agent_id INTEGER"))
         event_cols = {row[1] for row in conn.execute(text("PRAGMA table_info(events)"))}
         if "property_id" not in event_cols:
             conn.execute(text("ALTER TABLE events ADD COLUMN property_id INTEGER DEFAULT 1"))
@@ -142,6 +149,8 @@ def init_db(db: Session) -> None:
 
     Base.metadata.create_all(bind=engine)
     _migrate_sqlite_columns(engine)
+    ensure_super_agent(db)
+    assign_unowned_properties(db)
     cfg = db.get(PropertyConfig, 1)
     if not cfg:
         apply_seed(db, preserve_passcode=False)

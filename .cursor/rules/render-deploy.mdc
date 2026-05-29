@@ -1,0 +1,15 @@
+---
+description: Trigger Render production deploy via local script when user asks to deploy
+alwaysApply: true
+---
+
+# Render deploy
+
+When the user asks to deploy, manual deploy, or push to Render production:
+
+1. Run from repo root:
+   `cd /Users/walterstauss/Projects/property-launch-cal && ./scripts/render-deploy.sh`
+2. Optional commit SHA: append the ref, e.g. `./scripts/render-deploy.sh bb16d03`
+3. Credentials live in gitignored `.env` (`RENDER_DEPLOY_HOOK_URL` or `RENDER_API_KEY` + `RENDER_SERVICE_ID`). Setup: `docs/render-deploy.md`.
+4. If the script exits 1 (missing credentials), tell the user to complete one-time setup in `docs/render-deploy.md` — do not use the browser to log into Render unless they prefer that.
+5. Do not commit secrets or deploy hook URLs.

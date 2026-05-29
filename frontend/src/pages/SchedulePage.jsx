@@ -24,11 +24,16 @@ import PickDateDialog from '@/components/schedule/PickDateDialog'
 import AdminUnlockDialog from '@/components/schedule/AdminUnlockDialog'
 import ClientShareUnlockDialog from '@/components/schedule/ClientShareUnlockDialog'
 import ListingAdminPanel from '@/components/schedule/ListingAdminPanel'
+import ListingSettingsPanel from '@/components/schedule/ListingSettingsPanel'
+import { eventPresetsFromConfig, categoryPresetsFromConfig } from '@/lib/eventPresets'
+import { computeMilestone, milestoneHeroSuffix } from '@/lib/milestone'
 import NotesSection from '@/components/schedule/NotesSection'
 import PickNotifications from '@/components/schedule/PickNotifications'
 import { getClientToken } from '@/lib/clientAuth'
 import { composeScheduleEmail } from '@/lib/scheduleEmail'
 import { buildScheduleShareUrl } from '@/lib/shareUrls'
+import { getAgentProfile, setAgentProfile } from '@/lib/agentAuth'
+import OnboardingDialog from '@/components/schedule/OnboardingDialog'
 
 export default function SchedulePage() {
   const navigate = useNavigate()
@@ -54,6 +59,8 @@ export default function SchedulePage() {
   const [dealCalendars, setDealCalendars] = useState([])
   const [dealsLoading, setDealsLoading] = useState(false)
   const [showDealMenu, setShowDealMenu] = useState(false)
+  const [agentProfile, setAgentProfileState] = useState(() => getAgentProfile())
+  const [onboardingOpen, setOnboardingOpen] = useState(false)
 
   const loadListingData = useCallback(async (slug) => {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
@@ -94,6 +101,41 @@ export default function SchedulePage() {
     setLoading(true)
     load()
   }, [load])
+
+  useEffect(() => {
+    if (searchParams.get('admin') === '1' && localStorage.getItem(ADMIN_KEY)) {
+      setIsAdmin(true)
+      setAdminMode(true)
+    }
+  }, [searchParams])
+
+  const refreshAgentProfile = useCallback(async () => {
+    if (!localStorage.getItem(ADMIN_KEY)) return
+    try {
+      const me = await api.getAgentMe()
+      const profile = {
+        is_super_admin: Boolean(me.is_super_admin),
+        agent: me.agent || null,
+        onboarding_required: Boolean(me.agent && !me.agent.onboarding_completed),
+      }
+      setAgentProfile(profile)
+      setAgentProfileState(profile)
+    } catch {
+      setAgentProfileState(null)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isAdmin) refreshAgentProfile()
+  }, [isAdmin, refreshAgentProfile])
+
+  useEffect(() => {
+    if (adminMode && agentProfile?.onboarding_required) {
+      setOnboardingOpen(true)
+    }
+  }, [adminMode, agentProfile?.onboarding_required])
+
+  const isSuperAdmin = Boolean(agentProfile?.is_super_admin)
 
   useEffect(() => {
     if (!config?.property_slug || loadError) return
@@ -176,11 +218,38 @@ export default function SchedulePage() {
     [config?.listing_parties],
   )
 
-  const handleAdminSuccess = (token) => {
+  const eventTitleOptions = useMemo(() => eventPresetsFromConfig(config), [config])
+  const categoryOptions = useMemo(() => categoryPresetsFromConfig(config), [config])
+
+  const milestone = useMemo(
+    () => computeMilestone(config?.deal_type, events),
+    [config?.deal_type, events],
+  )
+
+  const handleAdminSuccess = async (token) => {
     localStorage.setItem(ADMIN_KEY, token)
     setIsAdmin(true)
     setUnlockOpen(false)
     toast.success('Admin unlocked')
+    await refreshAgentProfile()
+  }
+
+  const handleOnboardingComplete = async () => {
+    try {
+      await api.completeOnboarding()
+      const next = {
+        ...agentProfile,
+        onboarding_required: false,
+        agent: agentProfile?.agent
+          ? { ...agentProfile.agent, onboarding_completed: true }
+          : null,
+      }
+      setAgentProfile(next)
+      setAgentProfileState(next)
+      setOnboardingOpen(false)
+    } catch {
+      toast.error('Could not save onboarding status')
+    }
   }
 
   const handleAdminToggle = (on) => {
@@ -467,9 +536,7 @@ export default function SchedulePage() {
           </div>
           <p className="font-body text-white/90 mt-4 text-lg">
             {config?.tagline || 'New Listing'}
-            {config?.launch_date_label && (
-              <span> · Going live {config.launch_date_label}</span>
-            )}
+            <span>{milestoneHeroSuffix(milestone, config?.launch_date_label)}</span>
           </p>
           {nextEvent && (
             <p className="font-body text-white/80 mt-3 text-sm sm:text-base">
@@ -525,7 +592,7 @@ export default function SchedulePage() {
               Export .ics
             </Button>
           </div>
-          {isAdmin && adminMode && !isShare && (
+          {isAdmin && adminMode && !isShare && isSuperAdmin && (
             <Button
               className="rounded-none text-xs uppercase tracking-widest bg-zinc-950 text-white hover:bg-zinc-800"
               onClick={() => navigate('/admin/new-listing')}
@@ -689,9 +756,24 @@ export default function SchedulePage() {
           <ListingAdminPanel
             propertySlug={config.property_slug}
             propertyName={config.property_name}
+            dealType={config.deal_type}
+            events={events}
             listingParties={listingParties}
             scheduleEmailIntro={config.schedule_email_intro}
+            isSuperAdmin={isSuperAdmin}
             onPartiesSaved={load}
+          />
+        </section>
+      )}
+
+      {isAdmin && adminMode && !isShare && config && (
+        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16 border-t border-zinc-200">
+          <p className="section-subhead text-zinc-500 mb-2">05 — Settings</p>
+          <ListingSettingsPanel
+            propertySlug={config.property_slug}
+            config={config}
+            listingParties={listingParties}
+            onSaved={load}
           />
         </section>
       )}
@@ -703,7 +785,7 @@ export default function SchedulePage() {
         {isShare ? (
           <p className="mt-1 text-xs">Shared client view — pick your date when prompted.</p>
         ) : isAdmin ? (
-          <p className="mt-1 text-xs">Toggle Admin to edit the schedule; transaction settings are at the bottom of the page.</p>
+          <p className="mt-1 text-xs">Toggle Admin to edit; Admin (04) and Settings (05) are at the bottom.</p>
         ) : null}
       </footer>
 
@@ -714,6 +796,13 @@ export default function SchedulePage() {
           if (!open && !isAdmin) setAdminMode(false)
         }}
         onSuccess={handleAdminSuccess}
+      />
+
+      <OnboardingDialog
+        open={onboardingOpen}
+        onOpenChange={setOnboardingOpen}
+        agentName={agentProfile?.agent?.name}
+        onComplete={handleOnboardingComplete}
       />
 
       <EventDialog
@@ -728,6 +817,8 @@ export default function SchedulePage() {
         initial={editingEvent}
         defaultDate={newEventDate}
         listingParties={listingParties}
+        eventTitleOptions={eventTitleOptions}
+        categoryOptions={categoryOptions}
         onSubmit={handleSaveEvent}
       />
 

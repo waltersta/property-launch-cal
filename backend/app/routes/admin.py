@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 
-from ..auth import create_admin_token, require_admin, verify_passcode
+from ..agent_service import ensure_super_agent
+from ..auth import assert_super_admin, create_admin_token, get_admin_context, require_admin, verify_passcode
 from ..database import DATABASE_URL, get_db
 from ..db_migrate import sqlite_target
 from ..models import PropertyConfig
@@ -20,7 +21,8 @@ def verify_admin(body: AdminVerifyIn, db: Session = Depends(get_db)):
     cfg = db.get(PropertyConfig, 1)
     if not cfg or not verify_passcode(body.token, cfg.admin_passcode_hash):
         return AdminVerifyOut(valid=False)
-    admin_token = create_admin_token(db)
+    super_agent = ensure_super_agent(db)
+    admin_token = create_admin_token(db, agent_id=super_agent.id)
     return AdminVerifyOut(valid=True, admin_token=admin_token)
 
 
@@ -34,8 +36,9 @@ def _live_sqlite_path() -> Path:
     return target
 
 
-@router.get("/db-download", dependencies=[Depends(require_admin)])
-def db_download():
+@router.get("/db-download")
+def db_download(ctx=Depends(require_admin)):
+    assert_super_admin(ctx)
     path = _live_sqlite_path()
     if not path.is_file():
         raise HTTPException(status_code=404, detail="Database file not found")
@@ -46,8 +49,9 @@ def db_download():
     )
 
 
-@router.post("/db-upload", dependencies=[Depends(require_admin)])
-async def db_upload(file: UploadFile):
+@router.post("/db-upload")
+async def db_upload(file: UploadFile, ctx=Depends(require_admin)):
+    assert_super_admin(ctx)
     target = _live_sqlite_path()
     staging = target.parent / "migrate.db"
     staging.parent.mkdir(parents=True, exist_ok=True)

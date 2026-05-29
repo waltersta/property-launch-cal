@@ -1,5 +1,7 @@
 # V2 Feature List
 
+See **[roadmap.md](./roadmap.md)** for phased delivery: **Section 5 (Settings) first**, then multi-agent / beta invites.
+
 - Add admin image uploads (from local computer) for hero/header images, instead of requiring URL-only inputs.
   - Include file picker in admin settings.
   - Add backend upload endpoint/storage path handling.

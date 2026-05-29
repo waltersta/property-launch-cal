@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from .auth import verify_passcode
 from .database import get_db
-from .models import ClientToken, PropertyConfig
+from .models import AdminToken, Agent, ClientToken, PropertyConfig
 
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
@@ -59,6 +59,22 @@ def _client_token_valid(db: Session, cfg: PropertyConfig, x_client_token: str | 
     return row is not None
 
 
+def _admin_may_access_property(db: Session, x_admin_token: str | None, cfg: PropertyConfig) -> bool:
+    if not x_admin_token:
+        return False
+    row = db.get(AdminToken, x_admin_token)
+    if not row:
+        return False
+    if row.agent_id is None:
+        return True
+    agent = db.get(Agent, row.agent_id)
+    if not agent:
+        return False
+    if agent.is_super_admin:
+        return True
+    return cfg.agent_id == agent.id
+
+
 def require_listing_access(
     property: str | None = Query(None, alias="property"),
     x_admin_token: str | None = Header(default=None, alias="X-Admin-Token"),
@@ -66,7 +82,7 @@ def require_listing_access(
     db: Session = Depends(get_db),
 ) -> PropertyConfig:
     cfg = resolve_property(db, property)
-    if _admin_token_valid(db, x_admin_token):
+    if _admin_may_access_property(db, x_admin_token, cfg):
         return cfg
     if not client_auth_required(cfg):
         return cfg

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Lock } from 'lucide-react'
-import { CATEGORIES } from '@/lib/scheduleApi'
 import { defaultPartiesForEvent, partyChoices } from '@/lib/eventParties'
 import { firstNameOnly } from '@/lib/listingParties'
-import { categoryForTitle, EVENT_TITLE_OPTIONS, normalizeEventTitle } from '@/lib/eventTitles'
+import { categoryForTitle, normalizeEventTitle } from '@/lib/eventTitles'
+import { DEFAULT_CATEGORY_PRESETS, DEFAULT_EVENT_PRESETS } from '@/lib/eventPresets'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -40,6 +40,8 @@ export default function EventDialog({
   initial,
   defaultDate = null,
   listingParties = null,
+  eventTitleOptions = DEFAULT_EVENT_PRESETS,
+  categoryOptions = DEFAULT_CATEGORY_PRESETS,
   onSubmit,
 }) {
   const [form, setForm] = useState(empty)
@@ -51,12 +53,12 @@ export default function EventDialog({
   useEffect(() => {
     if (open) {
       if (initial) {
-        const title = normalizeEventTitle(initial.title)
+        const title = normalizeEventTitle(initial.title, eventTitleOptions)
         setForm({
           ...empty,
           ...initial,
           title,
-          category: initial.category || categoryForTitle(title),
+          category: initial.category || categoryForTitle(title, eventTitleOptions),
           date_options: initial.date_options || [],
           required_parties: defaultPartiesForEvent(initial, listingParties),
           completed: Boolean(initial.completed),
@@ -72,7 +74,7 @@ export default function EventDialog({
       }
       setOptionInput('')
     }
-  }, [open, initial, defaultDate, listingParties])
+  }, [open, initial, defaultDate, listingParties, eventTitleOptions])
 
   const update = (k, v) => setForm((f) => ({ ...f, [k]: v }))
 
@@ -82,14 +84,14 @@ export default function EventDialog({
     setForm((f) => ({
       ...f,
       title,
-      category: categoryForTitle(title),
+      category: categoryForTitle(title, eventTitleOptions),
       ...openHouseTimes,
       required_parties:
         title === 'Key handover'
           ? partyChoices(listingParties)
           : f.required_parties?.length
             ? f.required_parties
-            : defaultPartiesForEvent({ category: categoryForTitle(title) }, listingParties),
+            : defaultPartiesForEvent({ category: categoryForTitle(title, eventTitleOptions) }, listingParties),
     }))
   }
 
@@ -178,10 +180,10 @@ export default function EventDialog({
               <option value="" disabled>
                 Select event…
               </option>
-              {form.title && !EVENT_TITLE_OPTIONS.some((o) => o.title === form.title) && (
+              {form.title && !eventTitleOptions.some((o) => o.title === form.title) && (
                 <option value={form.title}>{form.title}</option>
               )}
-              {EVENT_TITLE_OPTIONS.map((o) => (
+              {eventTitleOptions.map((o) => (
                 <option key={o.title} value={o.title}>
                   {o.title}
                 </option>
@@ -204,7 +206,7 @@ export default function EventDialog({
                 onChange={(e) => update('category', e.target.value)}
                 className="mt-1 w-full h-10 border border-zinc-300 px-2 text-sm"
               >
-                {CATEGORIES.map((c) => (
+                {categoryOptions.map((c) => (
                   <option key={c.value} value={c.value}>
                     {c.label}
                   </option>

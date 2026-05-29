@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .database import SessionLocal
 from .frontend_serve import register_frontend
-from .routes import admin, config, events, notes, notifications, properties, share
+from .routes import admin, agents, config, events, notes, notifications, properties, share
 from .seed import init_db
 
 
@@ -36,6 +36,7 @@ app.include_router(share.router, prefix="/api")
 app.include_router(notifications.router, prefix="/api")
 app.include_router(notes.router, prefix="/api")
 app.include_router(properties.router, prefix="/api")
+app.include_router(agents.router, prefix="/api")
 
 
 @app.get("/api/health")

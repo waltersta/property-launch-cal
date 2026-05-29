@@ -15,6 +15,19 @@ class ListingParties(BaseModel):
     clients: list[PartyPerson] = Field(default_factory=list)
 
 
+class EventPresetOption(BaseModel):
+    title: str
+    category: str = "general"
+
+
+class CategoryPresetOption(BaseModel):
+    value: str
+    label: str = ""
+
+
+DealType = Literal["listing", "purchase"]
+
+
 class ConfigOut(BaseModel):
     property_slug: str
     client_auth_required: bool = False
@@ -24,6 +37,9 @@ class ConfigOut(BaseModel):
     create_property_label: str = "New listing"
     schedule_email_intro: str = ""
     launch_date_label: str
+    deal_type: DealType = "listing"
+    event_presets: list[EventPresetOption] = Field(default_factory=list)
+    category_presets: list[CategoryPresetOption] = Field(default_factory=list)
     hero_image_url: str
     header_image_url: str
     tzid: str
@@ -46,6 +62,9 @@ class ConfigUpdate(BaseModel):
     create_property_label: str | None = None
     schedule_email_intro: str | None = None
     launch_date_label: str | None = None
+    deal_type: DealType | None = None
+    event_presets: list[EventPresetOption] | None = None
+    category_presets: list[CategoryPresetOption] | None = None
     hero_image_url: str | None = None
     header_image_url: str | None = None
     timezone: str | None = None
@@ -201,6 +220,43 @@ class PropertyCreate(BaseModel):
     create_property_label: str = "New listing"
     client_passcode: str | None = None
     listing_parties: ListingParties | None = None
+
+
+class AgentOut(BaseModel):
+    id: int
+    name: str
+    email: str = ""
+    is_super_admin: bool = False
+    onboarding_completed: bool = False
+
+
+class AgentMeOut(BaseModel):
+    is_super_admin: bool
+    agent: AgentOut | None = None
+
+
+class BetaInviteIn(BaseModel):
+    name: str
+    email: str
+
+
+class BetaInviteOut(BaseModel):
+    agent: AgentOut
+    property_slug: str
+    property_name: str
+    invite_url: str
+
+
+class AgentClaimIn(BaseModel):
+    token: str
+
+
+class AgentClaimOut(BaseModel):
+    admin_token: str
+    agent: AgentOut
+    property_slug: str
+    property_name: str
+    onboarding_required: bool = True
 
 
 class PropertySummary(BaseModel):

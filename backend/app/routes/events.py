@@ -3,10 +3,10 @@ import secrets
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from ..auth import require_admin
+from ..auth import assert_property_admin, require_admin
 from ..database import get_db
 from ..links import ensure_pick_token
-from ..models import Event, utcnow
+from ..models import Event, PropertyConfig, utcnow
 from ..pick_service import apply_pick
 from ..property import is_admin_request, require_listing_access, resolve_property
 from ..schemas import EventCreate, EventOut, EventUpdate, PickIn
@@ -14,6 +14,13 @@ from ..seed import apply_seed
 from ..serializers import event_to_out
 
 router = APIRouter(prefix="/events", tags=["events"])
+
+
+def _cfg_for_event(db: Session, ev: Event) -> PropertyConfig:
+    cfg = db.get(PropertyConfig, ev.property_id)
+    if not cfg:
+        raise HTTPException(status_code=404, detail="Property not found")
+    return cfg
 
 
 @router.get("", response_model=list[EventOut])
@@ -34,9 +41,10 @@ def create_event(
     body: EventCreate,
     property: str | None = Query(None),
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
     max_order = db.query(Event).filter(Event.property_id == cfg.id).count()
     ev = Event(
         property_id=cfg.id,
@@ -75,11 +83,12 @@ def update_event(
     event_id: str,
     body: EventUpdate,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     ev = db.get(Event, event_id)
     if not ev:
         raise HTTPException(status_code=404, detail="Event not found")
+    assert_property_admin(_cfg_for_event(db, ev), ctx)
     data = body.model_dump(exclude_unset=True)
     if "date_options" in data:
         ev.date_options = data.pop("date_options")
@@ -99,11 +108,12 @@ def update_event(
 def delete_event(
     event_id: str,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     ev = db.get(Event, event_id)
     if not ev:
         raise HTTPException(status_code=404, detail="Event not found")
+    assert_property_admin(_cfg_for_event(db, ev), ctx)
     db.delete(ev)
     db.commit()
     return {"ok": True}
@@ -127,11 +137,12 @@ def pick_event(
 def generate_pick_token(
     event_id: str,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     ev = db.get(Event, event_id)
     if not ev:
         raise HTTPException(status_code=404, detail="Event not found")
+    assert_property_admin(_cfg_for_event(db, ev), ctx)
     token = ensure_pick_token(db, ev)
     return {"pick_token": token}
 
@@ -140,11 +151,12 @@ def generate_pick_token(
 def list_views(
     event_id: str,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     ev = db.get(Event, event_id)
     if not ev:
         raise HTTPException(status_code=404, detail="Event not found")
+    assert_property_admin(_cfg_for_event(db, ev), ctx)
     return ev.pick_history
 
 
@@ -152,9 +164,10 @@ def list_views(
 def reset_events(
     property: str | None = Query(None),
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
     if cfg.id != 1:
         raise HTTPException(
             status_code=400,
