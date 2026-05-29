@@ -27,7 +27,7 @@ class Agent(Base):
 class PropertyConfig(Base):
     __tablename__ = "property_config"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     agent_id: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)
     property_slug: Mapped[str] = mapped_column(String(64), default="property", index=True)
     property_name: Mapped[str] = mapped_column(String(255), default="Property")

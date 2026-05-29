@@ -32,8 +32,12 @@ export default function BetaInvitePanel() {
       setName('')
       setEmail('')
     } catch (err) {
-      const msg = err.response?.data?.detail
-      toast.error(typeof msg === 'string' ? msg : 'Could not create invite')
+      const detail = err.response?.data?.detail
+      let msg = 'Could not create invite'
+      if (typeof detail === 'string') msg = detail
+      else if (Array.isArray(detail) && detail[0]?.msg) msg = detail[0].msg
+      else if (!err.response) msg = 'Could not reach the server'
+      toast.error(msg)
     } finally {
       setSubmitting(false)
     }
