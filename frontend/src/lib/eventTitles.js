@@ -1,31 +1,22 @@
-/** Preset event titles (short labels) and default categories. */
-export const EVENT_TITLE_OPTIONS = [
-  { title: 'Key handover', category: 'keys' },
-  { title: 'Home inspection', category: 'inspection' },
-  { title: 'Pest inspection', category: 'inspection' },
-  { title: 'Well inspection', category: 'inspection' },
-  { title: 'Septic inspection', category: 'inspection' },
-  { title: 'Sewer inspection', category: 'inspection' },
-  { title: 'Cleaning', category: 'general' },
-  { title: 'Windows', category: 'general' },
-  { title: 'Staging', category: 'staging' },
-  { title: 'Photography', category: 'photo' },
-  { title: 'Listing live', category: 'listing' },
-  { title: 'Public open house', category: 'general' },
-  { title: 'Broker open house', category: 'general' },
-  { title: 'Seller disclosures due', category: 'general' },
-]
+import { DEFAULT_EVENT_PRESETS, eventPresetsFromConfig } from '@/lib/eventPresets'
 
-export function categoryForTitle(title) {
-  const match = EVENT_TITLE_OPTIONS.find((o) => o.title === title)
+/** @deprecated use eventPresetsFromConfig — kept for imports */
+export const EVENT_TITLE_OPTIONS = DEFAULT_EVENT_PRESETS
+
+export function eventTitleOptions(config) {
+  return eventPresetsFromConfig(config)
+}
+
+export function categoryForTitle(title, titleOptions = DEFAULT_EVENT_PRESETS) {
+  const match = titleOptions.find((o) => o.title === title)
   return match?.category || 'general'
 }
 
-export function normalizeEventTitle(title) {
+export function normalizeEventTitle(title, titleOptions = DEFAULT_EVENT_PRESETS) {
   const t = (title || '').trim()
   if (!t) return ''
-  const exact = EVENT_TITLE_OPTIONS.find((o) => o.title.toLowerCase() === t.toLowerCase())
+  const exact = titleOptions.find((o) => o.title.toLowerCase() === t.toLowerCase())
   if (exact) return exact.title
-  const partial = EVENT_TITLE_OPTIONS.find((o) => t.toLowerCase().includes(o.title.toLowerCase()))
+  const partial = titleOptions.find((o) => t.toLowerCase().includes(o.title.toLowerCase()))
   return partial?.title || t
 }

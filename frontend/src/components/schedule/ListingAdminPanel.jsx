@@ -5,6 +5,8 @@ import api from '@/lib/scheduleApi'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import BetaInvitePanel from '@/components/schedule/BetaInvitePanel'
+import DealTypeMilestonePanel from '@/components/schedule/DealTypeMilestonePanel'
 import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
 import {
   composeScheduleEmail,
@@ -25,8 +27,11 @@ async function copyText(url, label) {
 export default function ListingAdminPanel({
   propertySlug,
   propertyName,
+  dealType,
+  events,
   listingParties,
   scheduleEmailIntro,
+  isSuperAdmin = false,
   onPartiesSaved,
 }) {
   const [clientPasscode, setClientPasscode] = useState('')
@@ -98,6 +103,13 @@ export default function ListingAdminPanel({
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
+        {isSuperAdmin ? <BetaInvitePanel /> : null}
+        <DealTypeMilestonePanel
+          propertySlug={propertySlug}
+          dealType={dealType}
+          events={events}
+          onSaved={onPartiesSaved}
+        />
         <ListingPartiesPanel
           propertySlug={propertySlug}
           listingParties={listingParties}

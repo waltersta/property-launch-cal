@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
 
-from ..auth import require_admin
+from ..auth import assert_property_admin, require_admin
 from ..database import get_db
 from ..auth import create_client_token, verify_client_passcode
 from ..links import ensure_pick_token, public_base_url
@@ -29,9 +29,10 @@ def get_client_links(
     request: Request,
     property: str | None = Query(None),
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
     base = public_base_url(request, cfg)
     slug = cfg.property_slug if cfg else "property"
     schedule_url = f"{base}{schedule_share_path(slug)}"

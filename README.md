@@ -32,7 +32,7 @@ git commit -m "Describe your change"
 git push origin main
 ```
 
-Render redeploys automatically when `main` updates.
+Render redeploys automatically when `main` updates (when auto-deploy is on). For a reliable manual deploy from the terminal or Cursor agent, see [`docs/render-deploy.md`](docs/render-deploy.md) (`./scripts/render-deploy.sh` + `.env` deploy hook).
 
 ### 2. Create a Render account
 

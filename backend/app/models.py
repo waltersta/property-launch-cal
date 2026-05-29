@@ -12,10 +12,23 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
+class Agent(Base):
+    __tablename__ = "agents"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(128), default="Agent")
+    email: Mapped[str] = mapped_column(String(255), default="")
+    invite_token: Mapped[str] = mapped_column(String(64), unique=True, index=True)
+    is_super_admin: Mapped[bool] = mapped_column(Boolean, default=False)
+    onboarding_completed_at: Mapped[str] = mapped_column(String(64), default="")
+    created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
+
+
 class PropertyConfig(Base):
     __tablename__ = "property_config"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    agent_id: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)
     property_slug: Mapped[str] = mapped_column(String(64), default="property", index=True)
     property_name: Mapped[str] = mapped_column(String(255), default="Property")
     tagline: Mapped[str] = mapped_column(String(255), default="New Listing")
@@ -26,6 +39,9 @@ class PropertyConfig(Base):
         default="Here's the link to the calendar and timeline. This link will never change, but the events on the calendar and timeline might. Keep the link handy.<P>Our transaction coordinator is _______ (email: _____________).",
     )
     launch_date_label: Mapped[str] = mapped_column(String(128), default="")
+    deal_type: Mapped[str] = mapped_column(String(16), default="listing")
+    event_presets_json: Mapped[str] = mapped_column(Text, default="")
+    category_presets_json: Mapped[str] = mapped_column(Text, default="")
     hero_image_url: Mapped[str] = mapped_column(Text, default="")
     header_image_url: Mapped[str] = mapped_column(Text, default="")
     timezone: Mapped[str] = mapped_column(String(64), default="America/Los_Angeles")
@@ -133,6 +149,7 @@ class AdminToken(Base):
     __tablename__ = "admin_tokens"
 
     token: Mapped[str] = mapped_column(String(64), primary_key=True)
+    agent_id: Mapped[int | None] = mapped_column(Integer, index=True, nullable=True)
     created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
 
 

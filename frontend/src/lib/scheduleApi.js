@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { DEFAULT_CATEGORY_PRESETS } from '@/lib/eventPresets'
 import { clientHeaders } from '@/lib/clientAuth'
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || ''
@@ -134,19 +135,19 @@ const api = {
 
   markAllNotificationsRead: () =>
     axios.post(`${API}/notifications/read-all`, {}, { headers: adminHeaders() }).then((r) => r.data),
+
+  getAgentMe: () => axios.get(`${API}/agents/me`, { headers: adminHeaders() }).then((r) => r.data),
+
+  betaInvite: (data) =>
+    axios.post(`${API}/agents/beta-invite`, data, { headers: adminHeaders() }).then((r) => r.data),
+
+  claimAgentInvite: (token) => axios.post(`${API}/agents/claim`, { token }).then((r) => r.data),
+
+  completeOnboarding: () =>
+    axios.post(`${API}/agents/onboarding-complete`, {}, { headers: adminHeaders() }).then((r) => r.data),
 }
 
-export const CATEGORIES = [
-  { value: 'keys', label: 'Keys' },
-  { value: 'inspection', label: 'Inspection' },
-  { value: 'staging', label: 'Staging' },
-  { value: 'photo', label: 'Photography' },
-  { value: 'listing', label: 'Listing' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'showing', label: 'Showing' },
-  { value: 'deadline', label: 'Deadline' },
-  { value: 'general', label: 'General' },
-]
+export const CATEGORIES = DEFAULT_CATEGORY_PRESETS
 
 export const NOTE_STATUSES = ['Open', 'Waiting', 'In progress', 'Done']
 

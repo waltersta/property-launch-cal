@@ -1,0 +1,53 @@
+{
+  "events": [
+    {
+      "order": 1,
+      "title": "Key handover",
+      "description": "Meet at the property to hand over keys. Pick a date that works.",
+      "category": "keys",
+      "status": "awaiting_pick",
+      "date": null,
+      "date_options": [],
+      "pick_owner": "Client",
+      "assigned_to": "",
+      "visibility": "public"
+    },
+    {
+      "order": 2,
+      "title": "Staging",
+      "description": "Stager on site for the day.",
+      "category": "staging",
+      "status": "confirmed",
+      "date": null,
+      "assigned_to": "Stager",
+      "visibility": "public"
+    },
+    {
+      "order": 3,
+      "title": "Photography",
+      "description": "Listing photos captured.",
+      "category": "photo",
+      "status": "confirmed",
+      "date": null,
+      "assigned_to": "Photographer",
+      "visibility": "public"
+    },
+    {
+      "order": 4,
+      "title": "Listing live",
+      "description": "Listing publishes to the MLS.",
+      "category": "listing",
+      "status": "confirmed",
+      "date": null,
+      "assigned_to": "",
+      "visibility": "public"
+    }
+  ],
+  "notes": [
+    {
+      "order": 1,
+      "status": "Open",
+      "description": "Welcome — edit events, try drag-and-drop on the calendar, and share the client link when ready."
+    }
+  ]
+}

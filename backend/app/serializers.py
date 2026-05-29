@@ -1,3 +1,4 @@
+from .event_presets import parse_category_presets, parse_event_presets
 from .listing_parties import parse_listing_parties
 from .models import Event, PropertyConfig, ScheduleNote
 from .property import client_auth_required
@@ -14,6 +15,9 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         create_property_label=cfg.create_property_label or "New listing",
         schedule_email_intro=cfg.schedule_email_intro or "",
         launch_date_label=cfg.launch_date_label,
+        deal_type=(cfg.deal_type or "listing") if (cfg.deal_type or "listing") in ("listing", "purchase") else "listing",
+        event_presets=parse_event_presets(cfg.event_presets_json),
+        category_presets=parse_category_presets(cfg.category_presets_json),
         hero_image_url=cfg.hero_image_url,
         header_image_url=cfg.header_image_url,
         tzid=cfg.timezone,

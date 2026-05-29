@@ -1,7 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from ..auth import ensure_passcode_hash, hash_passcode, require_admin, set_client_passcode
+from ..agent_service import ensure_super_agent
+from ..auth import (
+    ensure_passcode_hash,
+    hash_passcode,
+    property_query_for_admin,
+    require_admin,
+    set_client_passcode,
+)
 from ..database import get_db
 from ..listing_parties import dump_listing_parties
 from ..models import PropertyConfig, utcnow
@@ -24,9 +31,9 @@ def _unique_slug(db: Session, base: str) -> str:
 @router.get("", response_model=list[PropertySummary])
 def list_properties(
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
-    rows = db.query(PropertyConfig).order_by(PropertyConfig.id).all()
+    rows = property_query_for_admin(db, ctx).order_by(PropertyConfig.id).all()
     return [
         PropertySummary(id=r.id, property_slug=r.property_slug, property_name=r.property_name)
         for r in rows
@@ -37,7 +44,7 @@ def list_properties(
 def create_property(
     body: PropertyCreate,
     db: Session = Depends(get_db),
-    _: str = Depends(require_admin),
+    ctx=Depends(require_admin),
 ):
     base_slug = slugify_property(body.property_slug or body.property_name)
     if not SLUG_RE.match(base_slug):
@@ -47,7 +54,10 @@ def create_property(
     first = db.query(PropertyConfig).order_by(PropertyConfig.id).first()
     admin_hash = first.admin_passcode_hash if first else hash_passcode("rainbow")
 
+    agent_id = ensure_super_agent(db).id if ctx.is_super_admin else ctx.agent_id
+
     cfg = PropertyConfig(
+        agent_id=agent_id,
         property_name=body.property_name.strip(),
         property_slug=slug,
         tagline=body.tagline,
