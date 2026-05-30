@@ -779,9 +779,6 @@ export default function SchedulePage() {
       )}
 
       <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 font-body">
-        <p>
-          {propertyName} · {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || ''}
-        </p>
         {isShare ? (
           <p className="mt-1 text-xs">Shared client view — pick your date when prompted.</p>
         ) : isAdmin ? (
