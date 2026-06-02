@@ -263,3 +263,42 @@ class PropertySummary(BaseModel):
     id: int
     property_slug: str
     property_name: str
+
+
+ImportMode = Literal["merge", "replace"]
+
+
+class ImportEventDraft(BaseModel):
+    title: str
+    description: str = ""
+    category: str = "general"
+    status: str = "confirmed"
+    date: str | None = None
+    end_date: str | None = None
+    time: str | None = None
+    end_time: str | None = None
+    date_options: list[str] = Field(default_factory=list)
+    pick_owner: str | None = None
+    assigned_to: str | None = None
+    assigned_phone: str | None = None
+    assigned_email: str | None = None
+    visibility: Visibility = "public"
+    completed: bool = False
+
+
+class TimelineImportParseIn(BaseModel):
+    text: str = ""
+    image_base64: str | None = None
+    timezone: str | None = None
+
+
+class TimelineImportParseOut(BaseModel):
+    events: list[ImportEventDraft]
+    notes: str = ""
+    source: str = "none"
+
+
+class TimelineImportApplyIn(BaseModel):
+    events: list[ImportEventDraft]
+    mode: ImportMode = "merge"
+    update_calendar_range: bool = True

@@ -5,13 +5,24 @@ from sqlalchemy.orm import Session
 
 from ..auth import assert_property_admin, require_admin
 from ..database import get_db
-from ..links import ensure_pick_token
 from ..models import Event, PropertyConfig, utcnow
 from ..pick_service import apply_pick
 from ..property import is_admin_request, require_listing_access, resolve_property
-from ..schemas import EventCreate, EventOut, EventUpdate, PickIn
+from ..event_presets import parse_event_presets
+from ..links import ensure_pick_token
+from ..schemas import (
+    EventCreate,
+    EventOut,
+    EventUpdate,
+    ImportEventDraft,
+    PickIn,
+    TimelineImportApplyIn,
+    TimelineImportParseIn,
+    TimelineImportParseOut,
+)
 from ..seed import apply_seed
 from ..serializers import event_to_out
+from ..timeline_import import calendar_range_for_events, parse_timeline_import
 
 router = APIRouter(prefix="/events", tags=["events"])
 
@@ -158,6 +169,100 @@ def list_views(
         raise HTTPException(status_code=404, detail="Event not found")
     assert_property_admin(_cfg_for_event(db, ev), ctx)
     return ev.pick_history
+
+
+def _draft_to_event(cfg: PropertyConfig, body: ImportEventDraft, order: int) -> Event:
+    ev = Event(
+        property_id=cfg.id,
+        title=body.title,
+        description=body.description,
+        category=body.category,
+        status=body.status,
+        date=body.date,
+        end_date=body.end_date,
+        time=body.time,
+        end_time=body.end_time,
+        pick_owner=body.pick_owner,
+        assigned_to=body.assigned_to,
+        assigned_phone=body.assigned_phone,
+        assigned_email=body.assigned_email,
+        visibility=body.visibility,
+        completed=body.completed,
+        order=order,
+    )
+    ev.date_options = body.date_options
+    ev.required_parties = []
+    ev.pick_history = []
+    ev.updated_at = utcnow().isoformat()
+    return ev
+
+
+@router.post("/import/parse", response_model=TimelineImportParseOut)
+def parse_import(
+    body: TimelineImportParseIn,
+    property: str | None = Query(None),
+    db: Session = Depends(get_db),
+    ctx=Depends(require_admin),
+):
+    cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
+    presets = parse_event_presets(cfg.event_presets_json)
+    tzid = body.timezone or cfg.timezone or "America/Los_Angeles"
+    result = parse_timeline_import(
+        text=body.text,
+        image_base64=body.image_base64,
+        tzid=tzid,
+        event_presets=presets,
+    )
+    return TimelineImportParseOut(
+        events=[ImportEventDraft(**e) for e in result["events"]],
+        notes=result.get("notes") or "",
+        source=result.get("source") or "none",
+    )
+
+
+@router.post("/import/apply", response_model=list[EventOut])
+def apply_import(
+    body: TimelineImportApplyIn,
+    property: str | None = Query(None),
+    db: Session = Depends(get_db),
+    ctx=Depends(require_admin),
+):
+    cfg = resolve_property(db, property)
+    assert_property_admin(cfg, ctx)
+    if not body.events:
+        raise HTTPException(status_code=400, detail="No events to import")
+
+    if body.mode == "replace":
+        db.query(Event).filter(Event.property_id == cfg.id).delete(synchronize_session=False)
+        start_order = 1
+    else:
+        start_order = db.query(Event).filter(Event.property_id == cfg.id).count() + 1
+
+    created: list[Event] = []
+    for idx, draft in enumerate(body.events):
+        ev = _draft_to_event(cfg, draft, start_order + idx)
+        db.add(ev)
+        created.append(ev)
+
+    db.flush()
+    for ev in created:
+        if ev.status == "awaiting_pick":
+            ensure_pick_token(db, ev)
+
+    if body.update_calendar_range:
+        cal = calendar_range_for_events([d.model_dump() for d in body.events])
+        if cal:
+            year, month_start, month_end = cal
+            cfg.calendar_year = year
+            cfg.calendar_month_start = month_start
+            cfg.calendar_month_end = month_end
+            cfg.updated_at = utcnow().isoformat()
+
+    db.commit()
+    for ev in created:
+        db.refresh(ev)
+    return [event_to_out(e) for e in created]
 
 
 @router.post("/reset")

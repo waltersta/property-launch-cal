@@ -117,6 +117,21 @@ Open [http://localhost:8000](http://localhost:8000).
 
 ---
 
+### Optional: timeline import (TC email / screenshot)
+
+Set `OPENAI_API_KEY` so the server can read forwarded timeline emails and screenshots (uses `gpt-4o-mini` by default; override with `OPENAI_MODEL`).
+
+Without the key, pasted email text still imports via basic date parsing; screenshots require the key.
+
+| Variable | Description |
+|----------|-------------|
+| `OPENAI_API_KEY` | Enables AI conversion for timeline import |
+| `OPENAI_MODEL` | Optional model override (default `gpt-4o-mini`) |
+
+In admin mode, use **Import timeline** to paste a forwarded TC email or screenshot, review events, then import.
+
+---
+
 ## Send links to your client
 
 1. Open the schedule, toggle **Admin**, enter your passcode.
@@ -142,6 +157,8 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 | `RENDER_EXTERNAL_URL` | (set by Render) | Used when `PUBLIC_BASE_URL` is unset |
 | `DATABASE_URL` | local: `sqlite:///.../backend/data/schedule.db` · Render: `sqlite:////var/data/schedule.db` (on the persistent disk) | SQLAlchemy database URL |
 | `VITE_BACKEND_URL` | empty | Leave empty on Render (same-origin `/api`) |
+| `OPENAI_API_KEY` | (unset) | Timeline import from TC emails / screenshots |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Model for timeline import |
 
 ## API overview
 
@@ -149,6 +166,8 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 - `GET /api/events` — all milestones
 - `POST /api/events/{id}/pick` — client date selection `{ date, picked_by }`
 - `POST /api/admin/verify` — `{ passcode }` → `{ valid, admin_token }`
+- `POST /api/events/import/parse` — convert pasted email or screenshot to draft events (admin)
+- `POST /api/events/import/apply` — create events from import preview (admin)
 - Admin routes require header `X-Admin-Token`
 
 ## Verification checklist

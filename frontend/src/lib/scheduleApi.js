@@ -145,6 +145,22 @@ const api = {
 
   completeOnboarding: () =>
     axios.post(`${API}/agents/onboarding-complete`, {}, { headers: adminHeaders() }).then((r) => r.data),
+
+  parseTimelineImport: (propertySlug, data) =>
+    axios
+      .post(`${API}/events/import/parse`, data, {
+        params: listingParams(propertySlug),
+        headers: adminHeaders(),
+      })
+      .then((r) => r.data),
+
+  applyTimelineImport: (propertySlug, data) =>
+    axios
+      .post(`${API}/events/import/apply`, data, {
+        params: listingParams(propertySlug),
+        headers: adminHeaders(),
+      })
+      .then((r) => r.data),
 }
 
 export const CATEGORIES = DEFAULT_CATEGORY_PRESETS

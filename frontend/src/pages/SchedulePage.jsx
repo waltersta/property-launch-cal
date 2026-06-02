@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ChevronDown, Download, Link2, Mail, MousePointer2, MousePointerClick, MoveRight, Plus } from 'lucide-react'
+import { ChevronDown, Download, Link2, Mail, MousePointer2, MousePointerClick, MoveRight, Plus, Upload } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import api, { ADMIN_KEY, effectiveSortDate } from '@/lib/scheduleApi'
 import { eventsToIcs, downloadIcs, slugify } from '@/lib/ics'
@@ -34,6 +34,7 @@ import { composeScheduleEmail } from '@/lib/scheduleEmail'
 import { buildScheduleShareUrl } from '@/lib/shareUrls'
 import { getAgentProfile, setAgentProfile } from '@/lib/agentAuth'
 import OnboardingDialog from '@/components/schedule/OnboardingDialog'
+import TimelineImportDialog from '@/components/schedule/TimelineImportDialog'
 
 export default function SchedulePage() {
   const navigate = useNavigate()
@@ -61,6 +62,7 @@ export default function SchedulePage() {
   const [showDealMenu, setShowDealMenu] = useState(false)
   const [agentProfile, setAgentProfileState] = useState(() => getAgentProfile())
   const [onboardingOpen, setOnboardingOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
 
   const loadListingData = useCallback(async (slug) => {
     const [evs, nts] = await Promise.all([api.list(slug), api.listNotes(slug)])
@@ -572,6 +574,10 @@ export default function SchedulePage() {
                   <Plus className="h-4 w-4 mr-1" />
                   Add event
                 </Button>
+                <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={() => setImportOpen(true)}>
+                  <Upload className="h-4 w-4 mr-1" />
+                  Import timeline
+                </Button>
                 <Button variant="outline" className="rounded-none text-xs uppercase tracking-widest" onClick={handleCopyShareLink}>
                   <Link2 className="h-4 w-4 mr-1" />
                   Copy link
@@ -817,6 +823,14 @@ export default function SchedulePage() {
         eventTitleOptions={eventTitleOptions}
         categoryOptions={categoryOptions}
         onSubmit={handleSaveEvent}
+      />
+
+      <TimelineImportDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        propertySlug={config?.property_slug}
+        tzid={tzid}
+        onImported={load}
       />
 
       <PickDateDialog
