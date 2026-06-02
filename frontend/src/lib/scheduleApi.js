@@ -138,6 +138,11 @@ const api = {
 
   getAgentMe: () => axios.get(`${API}/agents/me`, { headers: adminHeaders() }).then((r) => r.data),
 
+  getSiteBrand: () => axios.get(`${API}/admin/site-brand`, { headers: adminHeaders() }).then((r) => r.data),
+
+  updateSiteBrand: (data) =>
+    axios.put(`${API}/admin/site-brand`, data, { headers: adminHeaders() }).then((r) => r.data),
+
   betaInvite: (data) =>
     axios.post(`${API}/agents/beta-invite`, data, { headers: adminHeaders() }).then((r) => r.data),
 

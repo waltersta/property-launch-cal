@@ -9,7 +9,7 @@ import {
   eventPresetsFromConfig,
 } from '@/lib/eventPresets'
 import { firstNameOnly, normalizeListingParties, partiesForSave } from '@/lib/listingParties'
-import { HEADER_IMAGE_SPEC, HERO_IMAGE_SPEC } from '@/lib/imageSpecs'
+import SiteHeaderPanel from '@/components/schedule/SiteHeaderPanel'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,27 +22,13 @@ function emptyCategoryRow() {
   return { value: '', label: '' }
 }
 
-function ImageSpecBlock({ spec }) {
-  return (
-    <div className="mt-2 rounded-none border border-zinc-100 bg-zinc-50 px-3 py-2.5 space-y-1.5">
-      <p className="text-xs font-body text-zinc-700 leading-snug">{spec.summary}</p>
-      <ul className="text-xs font-body text-zinc-600 leading-snug list-disc list-inside space-y-0.5">
-        {spec.specs.map((line) => (
-          <li key={line}>{line}</li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
 export default function ListingSettingsPanel({
   propertySlug,
   config,
   listingParties,
+  isSuperAdmin = false,
   onSaved,
 }) {
-  const [heroImageUrl, setHeroImageUrl] = useState('')
-  const [headerImageUrl, setHeaderImageUrl] = useState('')
   const [agentName, setAgentName] = useState('')
   const [agentEmail, setAgentEmail] = useState('')
   const [eventRows, setEventRows] = useState([])
@@ -51,8 +37,6 @@ export default function ListingSettingsPanel({
 
   useEffect(() => {
     if (!config) return
-    setHeroImageUrl(config.hero_image_url || '')
-    setHeaderImageUrl(config.header_image_url || '')
     const parties = normalizeListingParties(config.listing_parties || listingParties)
     setAgentName(parties.agent?.name || '')
     setAgentEmail(parties.agent?.email || '')
@@ -98,8 +82,6 @@ export default function ListingSettingsPanel({
     setSaving(true)
     try {
       await api.updateConfig(propertySlug, {
-        hero_image_url: heroImageUrl.trim(),
-        header_image_url: headerImageUrl.trim(),
         event_presets,
         category_presets,
         listing_parties: partiesForSave(
@@ -123,45 +105,18 @@ export default function ListingSettingsPanel({
   const categoryChoices = categoryRows.length ? categoryRows : DEFAULT_CATEGORY_PRESETS
 
   return (
-    <div className="border border-zinc-200 bg-zinc-50 p-4 sm:p-5 space-y-6" data-testid="listing-settings-panel">
+    <div className="schedule-panel p-4 sm:p-5 space-y-6" data-testid="listing-settings-panel">
       <div>
-        <p className="overline text-zinc-500 mb-0.5">Transaction settings</p>
-        <h3 className="font-display text-xl font-light tracking-tight text-zinc-950">Branding, agent contact, and New Event lists</h3>
-      </div>
-
-      <div className="bg-white border border-zinc-200 p-4 space-y-3">
-        <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Images (URL)</p>
-        <p className="text-sm text-zinc-600 font-body leading-snug">
-          Paste image URLs below. Upload from your computer is planned for a later release — use the specs so
-          images fit the layout.
+        <p className="overline text-zinc-500 mb-0.5">System settings</p>
+        <h3 className="font-display text-xl font-light tracking-tight text-zinc-950">Site branding, agent contact, and New Event lists</h3>
+        <p className="text-sm text-zinc-600 font-body leading-snug mt-1">
+          Per-listing hero image is in Transaction admin (04).
         </p>
-        <div className="space-y-4">
-          <div>
-            <Label htmlFor="settings-hero-url">{HERO_IMAGE_SPEC.title}</Label>
-            <Input
-              id="settings-hero-url"
-              value={heroImageUrl}
-              onChange={(e) => setHeroImageUrl(e.target.value)}
-              className="rounded-none mt-1 font-mono text-xs"
-              placeholder="https://…"
-            />
-            <ImageSpecBlock spec={HERO_IMAGE_SPEC} />
-          </div>
-          <div>
-            <Label htmlFor="settings-header-url">{HEADER_IMAGE_SPEC.title}</Label>
-            <Input
-              id="settings-header-url"
-              value={headerImageUrl}
-              onChange={(e) => setHeaderImageUrl(e.target.value)}
-              className="rounded-none mt-1 font-mono text-xs"
-              placeholder="/header.png or https://…"
-            />
-            <ImageSpecBlock spec={HEADER_IMAGE_SPEC} />
-          </div>
-        </div>
       </div>
 
-      <div className="bg-white border border-zinc-200 p-4 space-y-3">
+      {isSuperAdmin ? <SiteHeaderPanel onSaved={onSaved} /> : null}
+
+      <div className="schedule-panel-card p-4 space-y-3">
         <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Agent contact</p>
         <p className="text-sm text-zinc-600 font-body leading-snug">
           Used for email sign-off and your party on the calendar. Client colors and deal type are in Transaction admin (04).
@@ -191,7 +146,7 @@ export default function ListingSettingsPanel({
         </div>
       </div>
 
-      <div className="bg-white border border-zinc-200 p-4 space-y-3">
+      <div className="schedule-panel-card p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">New Event — titles</p>
           <Button type="button" variant="ghost" size="sm" className="rounded-none text-xs h-8" onClick={resetEventPresets}>
@@ -243,7 +198,7 @@ export default function ListingSettingsPanel({
         </Button>
       </div>
 
-      <div className="bg-white border border-zinc-200 p-4 space-y-3">
+      <div className="schedule-panel-card p-4 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">New Event — categories</p>
           <Button type="button" variant="ghost" size="sm" className="rounded-none text-xs h-8" onClick={resetCategoryPresets}>

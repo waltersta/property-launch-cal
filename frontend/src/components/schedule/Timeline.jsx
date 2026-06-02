@@ -95,7 +95,7 @@ export default function Timeline({
               )}
             </div>
 
-            <div className="border border-zinc-200 bg-white p-5 sm:p-6">
+            <div className="schedule-panel-card p-5 sm:p-6">
               <div className="flex flex-wrap items-start justify-between gap-3 mb-3">
                 <div className="flex flex-wrap items-center gap-2 min-w-0 flex-1">
                   <span className={`pill ${pillClass}`}>{pillLabel}</span>

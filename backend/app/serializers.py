@@ -5,13 +5,13 @@ from .property import client_auth_required
 from .schemas import ConfigOut, EventOut, NoteOut
 
 
-def config_to_out(cfg: PropertyConfig) -> ConfigOut:
+def config_to_out(cfg: PropertyConfig, *, header_image_url: str) -> ConfigOut:
     return ConfigOut(
         property_slug=cfg.property_slug or "property",
         client_auth_required=client_auth_required(cfg),
         property_name=cfg.property_name,
         tagline=cfg.tagline,
-        schedule_type_label=cfg.schedule_type_label or "Listing schedule",
+        schedule_type_label=cfg.schedule_type_label or "Transaction schedule",
         create_property_label=cfg.create_property_label or "New listing",
         schedule_email_intro=cfg.schedule_email_intro or "",
         launch_date_label=cfg.launch_date_label,
@@ -19,7 +19,7 @@ def config_to_out(cfg: PropertyConfig) -> ConfigOut:
         event_presets=parse_event_presets(cfg.event_presets_json),
         category_presets=parse_category_presets(cfg.category_presets_json),
         hero_image_url=cfg.hero_image_url,
-        header_image_url=cfg.header_image_url,
+        header_image_url=header_image_url,
         tzid=cfg.timezone,
         notifications_enabled=cfg.notifications_enabled,
         notify_email=cfg.notify_email or "",

@@ -33,7 +33,7 @@ class ConfigOut(BaseModel):
     client_auth_required: bool = False
     property_name: str
     tagline: str
-    schedule_type_label: str = "Listing schedule"
+    schedule_type_label: str = "Transaction schedule"
     create_property_label: str = "New listing"
     schedule_email_intro: str = ""
     launch_date_label: str
@@ -158,6 +158,14 @@ class AdminVerifyIn(BaseModel):
     token: str
 
 
+class SiteBrandOut(BaseModel):
+    header_image_url: str
+
+
+class SiteBrandUpdate(BaseModel):
+    header_image_url: str
+
+
 class AdminVerifyOut(BaseModel):
     valid: bool
     admin_token: str | None = None
@@ -216,7 +224,7 @@ class PropertyCreate(BaseModel):
     property_name: str
     property_slug: str | None = None
     tagline: str = "New Listing"
-    schedule_type_label: str = "Listing schedule"
+    schedule_type_label: str = "Transaction schedule"
     create_property_label: str = "New listing"
     client_passcode: str | None = None
     listing_parties: ListingParties | None = None

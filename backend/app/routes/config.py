@@ -8,6 +8,7 @@ from ..property import resolve_property
 from ..schemas import ConfigOut, ConfigUpdate
 from ..event_presets import dump_category_presets, dump_event_presets
 from ..listing_parties import dump_listing_parties
+from ..site_brand import DEFAULT_HEADER_IMAGE_URL, get_site_header_url
 from ..serializers import config_to_out
 
 router = APIRouter(prefix="/config", tags=["config"])
@@ -25,7 +26,7 @@ def _default_config_out() -> ConfigOut:
         event_presets=[],
         category_presets=[],
         hero_image_url="",
-        header_image_url="",
+        header_image_url=DEFAULT_HEADER_IMAGE_URL,
         tzid="America/Los_Angeles",
         notifications_enabled=True,
         notify_email="",
@@ -52,7 +53,7 @@ def get_config(
         return _default_config_out()
     if admin_ctx is not None:
         assert_property_admin(cfg, admin_ctx)
-    return config_to_out(cfg)
+    return config_to_out(cfg, header_image_url=get_site_header_url(db))
 
 
 @router.put("", response_model=ConfigOut)
@@ -79,6 +80,7 @@ def update_config(
         raw = data.pop("category_presets")
         items = [x.model_dump() if hasattr(x, "model_dump") else x for x in raw]
         cfg.category_presets_json = dump_category_presets(items)
+    data.pop("header_image_url", None)
     if "deal_type" in data and data["deal_type"] not in ("listing", "purchase"):
         data.pop("deal_type")
     for key, value in data.items():
@@ -86,4 +88,4 @@ def update_config(
     cfg.updated_at = utcnow().isoformat()
     db.commit()
     db.refresh(cfg)
-    return config_to_out(cfg)
+    return config_to_out(cfg, header_image_url=get_site_header_url(db))

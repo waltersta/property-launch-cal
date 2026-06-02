@@ -3,6 +3,7 @@ from typing import Any
 
 DEFAULT_EVENT_PRESETS: list[dict[str, str]] = [
     {"title": "Key handover", "category": "keys"},
+    {"title": "Client vacation / out of town / busy", "category": "general"},
     {"title": "Home inspection", "category": "inspection"},
     {"title": "Pest inspection", "category": "inspection"},
     {"title": "Well inspection", "category": "inspection"},

@@ -100,6 +100,12 @@ export function formatShortDate(s) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
+/** Site-wide header path/URL for display (falls back to built-in banner). */
+export function effectiveHeaderImageUrl(config) {
+  const url = (config?.header_image_url || '').trim()
+  return url || '/header.png'
+}
+
 /** Request a sharper Unsplash URL when the hero/header is scaled up. */
 export function sharpImageUrl(url, width = 2400) {
   if (!url || typeof url !== 'string') return url

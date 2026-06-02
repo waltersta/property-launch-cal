@@ -1,6 +1,7 @@
 /** Default New Event dropdown sources (used when config has no custom lists). */
 export const DEFAULT_EVENT_PRESETS = [
   { title: 'Key handover', category: 'keys' },
+  { title: 'Client vacation / out of town / busy', category: 'general' },
   { title: 'Home inspection', category: 'inspection' },
   { title: 'Pest inspection', category: 'inspection' },
   { title: 'Well inspection', category: 'inspection' },

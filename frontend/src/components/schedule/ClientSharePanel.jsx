@@ -35,7 +35,7 @@ export default function ClientSharePanel({ propertySlug, propertyName }) {
 
   if (loading) {
     return (
-      <div className="border border-zinc-200 bg-zinc-50 p-6 text-sm text-zinc-500 font-body">
+      <div className="schedule-panel p-6 text-sm text-zinc-500 font-body">
         Loading client links…
       </div>
     )
@@ -46,7 +46,7 @@ export default function ClientSharePanel({ propertySlug, propertyName }) {
   const pick = links.pick_links?.[0]
 
   return (
-    <div className="border border-zinc-200 bg-zinc-50 p-6 sm:p-8 space-y-6" data-testid="client-share-panel">
+    <div className="schedule-panel p-6 sm:p-8 space-y-6" data-testid="client-share-panel">
       <div>
         <p className="overline text-zinc-500 mb-1">Send to client</p>
         <h3 className="font-display text-2xl font-light tracking-tight text-zinc-950">
@@ -60,7 +60,7 @@ export default function ClientSharePanel({ propertySlug, propertyName }) {
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
-        <div className="bg-white border border-zinc-200 p-5 space-y-3">
+        <div className="schedule-panel-card p-5 space-y-3">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Full schedule review</p>
           <p className="text-sm text-zinc-600 font-body">
             Calendar, timeline, and “Pick a date” on the key handover milestone.
@@ -100,7 +100,7 @@ export default function ClientSharePanel({ propertySlug, propertyName }) {
             </Button>
           </div>
         ) : (
-          <div className="bg-white border border-zinc-200 p-5 text-sm text-zinc-500 font-body">
+          <div className="schedule-panel-card p-5 text-sm text-zinc-500 font-body">
             No events awaiting a client date pick.
           </div>
         )}

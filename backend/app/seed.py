@@ -11,9 +11,9 @@ from .links import ensure_pick_token
 from .event_factory import event_from_seed
 from .models import Event, PropertyConfig, ScheduleNote, utcnow
 from .property import slugify_property
+from .site_brand import DEFAULT_HEADER_IMAGE_URL, ensure_site_brand, set_site_header_url
 
 SEED_PATH = Path(__file__).resolve().parent.parent / "seed.json"
-DEFAULT_HEADER_IMAGE_URL = "/header.png"
 
 
 def load_seed_data() -> dict:
@@ -41,7 +41,7 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
         tagline=cfg_data.get("tagline", "New Listing"),
         launch_date_label=cfg_data.get("launch_date_label", ""),
         hero_image_url=cfg_data.get("hero_image_url", ""),
-        header_image_url=cfg_data.get("header_image_url", DEFAULT_HEADER_IMAGE_URL),
+        header_image_url="",
         timezone=cfg_data.get("timezone", "America/Los_Angeles"),
         notifications_enabled=cfg_data.get("notifications_enabled", True),
         notify_email=cfg_data.get("notify_email", ""),
@@ -52,6 +52,8 @@ def apply_seed(db: Session, preserve_passcode: bool = True) -> None:
         admin_passcode_hash=saved_hash,
     )
     db.add(cfg)
+    db.flush()
+    set_site_header_url(db, cfg_data.get("header_image_url", DEFAULT_HEADER_IMAGE_URL))
 
     db.query(Event).filter(Event.property_id == 1).delete()
     db.query(ScheduleNote).filter(ScheduleNote.property_id == 1).delete()
@@ -96,7 +98,7 @@ def _migrate_sqlite_columns(engine) -> None:
             conn.execute(text("ALTER TABLE property_config ADD COLUMN listing_parties_json TEXT DEFAULT ''"))
         if "schedule_type_label" not in cols:
             conn.execute(
-                text("ALTER TABLE property_config ADD COLUMN schedule_type_label VARCHAR(128) DEFAULT 'Listing schedule'")
+                text("ALTER TABLE property_config ADD COLUMN schedule_type_label VARCHAR(128) DEFAULT 'Transaction schedule'")
             )
         if "create_property_label" not in cols:
             conn.execute(
@@ -159,8 +161,13 @@ def init_db(db: Session) -> None:
         if not cfg.notify_email:
             cfg.notify_email = "walter@831.net"
             cfg.notifications_enabled = True
-        if not (cfg.header_image_url or "").strip():
-            cfg.header_image_url = DEFAULT_HEADER_IMAGE_URL
+        ensure_site_brand(db)
+        db.execute(
+            text(
+                "UPDATE property_config SET schedule_type_label = 'Transaction schedule' "
+                "WHERE schedule_type_label = 'Listing schedule'"
+            )
+        )
         if not (cfg.property_slug or "").strip() or cfg.property_slug == "property":
             cfg.property_slug = slugify_property(cfg.property_name or "property")
         db.execute(text("UPDATE events SET property_id = 1 WHERE property_id IS NULL"))

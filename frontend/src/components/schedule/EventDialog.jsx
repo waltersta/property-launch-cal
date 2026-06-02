@@ -164,7 +164,7 @@ export default function EventDialog({
             {initial ? 'Edit Event' : 'New Event'}
           </DialogTitle>
           <DialogDescription className="font-body">
-            Add a milestone to the listing schedule.
+            Add a milestone to the transaction schedule.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">

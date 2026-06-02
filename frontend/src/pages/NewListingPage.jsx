@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 
 const PRESETS = {
   listing: {
-    schedule_type_label: 'Listing schedule',
+    schedule_type_label: 'Transaction schedule',
     tagline: 'New Listing',
     create_property_label: 'New listing',
   },

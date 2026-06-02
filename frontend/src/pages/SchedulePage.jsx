@@ -12,6 +12,7 @@ import {
   formatDateTime,
   formatLongDate,
   rescheduleDatesForDrop,
+  effectiveHeaderImageUrl,
   scheduleLastModified,
   sharpImageUrl,
 } from '@/lib/scheduleUtils'
@@ -150,7 +151,7 @@ export default function SchedulePage() {
 
   useEffect(() => {
     if (config?.property_name) {
-      document.title = `${config.property_name} · ${config.schedule_type_label || 'Listing schedule'}`
+      document.title = `${config.property_name} · ${config.schedule_type_label || 'Transaction schedule'}`
     }
   }, [config?.property_name])
 
@@ -209,6 +210,16 @@ export default function SchedulePage() {
     }
     return months
   }, [config])
+
+  const calendarRangeTitle = useMemo(() => {
+    if (calendarMonths.length < 2) return 'Schedule'
+    const first = calendarMonths[0]
+    const last = calendarMonths[calendarMonths.length - 1]
+    if (!first || !last) return 'Schedule'
+    const firstLabel = new Date(first.year, first.month).toLocaleString('en-US', { month: 'long' })
+    const lastLabel = new Date(last.year, last.month).toLocaleString('en-US', { month: 'long' })
+    return `${firstLabel} & ${lastLabel} ${first.year}`
+  }, [calendarMonths])
 
   const lastModifiedAt = useMemo(
     () => scheduleLastModified(events, notes, config?.updated_at),
@@ -447,7 +458,7 @@ export default function SchedulePage() {
       <div className="min-h-screen flex flex-col items-center justify-center px-6 text-center font-body text-zinc-600">
         <h1 className="font-display text-2xl font-light text-zinc-950 mb-2">Schedule not found</h1>
         <p className="text-sm max-w-md">
-          No listing schedule exists for <span className="font-mono text-zinc-800">{propertyParam}</span>.
+          No transaction schedule exists for <span className="font-mono text-zinc-800">{propertyParam}</span>.
           Check the link you received or contact your agent.
         </p>
       </div>
@@ -455,6 +466,7 @@ export default function SchedulePage() {
   }
 
   const propertyName = config?.property_name || 'Property'
+  const siteHeaderUrl = effectiveHeaderImageUrl(config)
   const canExport = isShare || isAdmin
   const awaitingPickEvent = events.find((e) => e.status === 'awaiting_pick')
 
@@ -470,10 +482,10 @@ export default function SchedulePage() {
     <div className="min-h-screen bg-white" id="top">
       <Toaster position="top-center" />
 
-      {config?.header_image_url && !headerImgFailed && (
+      {siteHeaderUrl && !headerImgFailed && (
         <div className="branded-header border-b border-zinc-200" data-testid="branded-header">
           <img
-            src={sharpImageUrl(config.header_image_url, 2048)}
+            src={sharpImageUrl(siteHeaderUrl, 2048)}
             alt={propertyName}
             className="branded-header-img"
             width={1024}
@@ -495,7 +507,7 @@ export default function SchedulePage() {
       >
         <div className="w-full max-w-7xl mx-auto px-6 sm:px-10 pb-10 sm:pb-14 pt-24">
           <p className="overline text-white/70 mb-3">
-            {config?.schedule_type_label || 'Listing schedule'} · {config?.calendar_year || new Date().getFullYear()}
+            {config?.schedule_type_label || 'Transaction schedule'} · {config?.calendar_year || new Date().getFullYear()}
             {!isShare && adminMode && isAdmin && (
               <span className="ml-3 border border-white/30 px-2 py-0.5">Admin</span>
             )}
@@ -654,7 +666,7 @@ export default function SchedulePage() {
 
       <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 print-calendar-section">
         {lastModifiedAt && (
-          <div className="border border-zinc-300 bg-zinc-50 px-4 py-3 mb-4 print:border-zinc-400 text-center">
+          <div className="schedule-panel-card px-4 py-3 mb-4 print:border-zinc-400 text-center">
             <p className="as-of-line">
               <span className="as-of-label">Last updated:</span>
               <span className="as-of-datetime">{formatDateTime(lastModifiedAt, tzid)}</span>
@@ -662,11 +674,10 @@ export default function SchedulePage() {
           </div>
         )}
         <p className="section-subhead text-zinc-400 mb-2">01 — Calendar</p>
-        <h2 className="section-heading mb-2">
-          {calendarMonths.length >= 2
-            ? `${calendarMonths[0] && new Date(calendarMonths[0].year, calendarMonths[0].month).toLocaleString('en-US', { month: 'long' })} & ${calendarMonths[calendarMonths.length - 1] && new Date(calendarMonths[calendarMonths.length - 1].year, calendarMonths[calendarMonths.length - 1].month).toLocaleString('en-US', { month: 'long' })} ${calendarMonths[0]?.year}`
-            : 'Schedule'}
-        </h2>
+        <h2 className="section-heading">{calendarRangeTitle}</h2>
+        <p className="font-body text-zinc-500 text-sm mt-2 mb-6 max-w-2xl">
+          The same events as the timeline below, shown on a month calendar.
+        </p>
         <div className="font-body text-zinc-500 mb-6 text-sm space-y-1">
           <p className="inline-flex items-center gap-1.5">
             <MousePointerClick className="h-3.5 w-3.5" />
@@ -730,11 +741,14 @@ export default function SchedulePage() {
         }}
       />
 
-      <section className="max-w-7xl mx-auto px-6 sm:px-10 pb-20 sm:pb-28">
+      <section className="schedule-section-divider max-w-7xl mx-auto px-6 sm:px-10 pt-12 sm:pt-16 pb-20 sm:pb-28">
         <div className="flex items-center justify-between mb-8">
           <div>
             <p className="section-subhead text-zinc-400 mb-2">03 — Timeline</p>
-            <h2 className="section-heading">Prepare for market</h2>
+            <h2 className="section-heading">{calendarRangeTitle}</h2>
+            <p className="font-body text-zinc-500 text-sm mt-2 max-w-2xl">
+              The same events as the calendar above, in date order with full detail.
+            </p>
           </div>
           <a href="#top" className="text-xs uppercase tracking-widest text-zinc-500 hover:text-zinc-950">
             Back to top
@@ -757,11 +771,12 @@ export default function SchedulePage() {
       </section>
 
       {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16 border-t-4 border-zinc-300">
+        <section className="schedule-section-divider max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16">
           <p className="section-subhead text-zinc-500 mb-2">04 — Admin</p>
           <ListingAdminPanel
             propertySlug={config.property_slug}
             propertyName={config.property_name}
+            config={config}
             dealType={config.deal_type}
             events={events}
             listingParties={listingParties}
@@ -773,24 +788,23 @@ export default function SchedulePage() {
       )}
 
       {isAdmin && adminMode && !isShare && config && (
-        <section className="max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16 border-t border-zinc-200">
+        <section className="schedule-section-divider max-w-7xl mx-auto px-6 sm:px-10 pt-10 pb-12 sm:pb-16">
           <p className="section-subhead text-zinc-500 mb-2">05 — Settings</p>
           <ListingSettingsPanel
             propertySlug={config.property_slug}
             config={config}
             listingParties={listingParties}
+            isSuperAdmin={isSuperAdmin}
             onSaved={load}
           />
         </section>
       )}
 
-      <footer className="border-t border-zinc-200 py-8 text-center text-sm text-zinc-500 font-body">
-        {isShare ? (
-          <p className="mt-1 text-xs">Shared client view — pick your date when prompted.</p>
-        ) : isAdmin ? (
-          <p className="mt-1 text-xs">Toggle Admin to edit; Admin (04) and Settings (05) are at the bottom.</p>
-        ) : null}
-      </footer>
+      {isShare && (
+        <footer className="schedule-section-divider py-8 text-center text-sm text-zinc-500 font-body">
+          <p className="text-xs">Shared client view — pick your date when prompted.</p>
+        </footer>
+      )}
 
       <AdminUnlockDialog
         open={unlockOpen}

@@ -32,7 +32,7 @@ export default function NotesSection({ notes, isAdmin, onSave, onDelete }) {
   }
 
   return (
-    <section className="max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16 border-t border-zinc-100" id="notes">
+    <section className="schedule-section-divider max-w-7xl mx-auto px-6 sm:px-10 py-12 sm:py-16" id="notes">
       <div className="flex flex-wrap items-start justify-between gap-4 mb-8">
         <div>
           <p className="section-subhead text-zinc-400 mb-2">02 — Notes</p>
@@ -49,7 +49,7 @@ export default function NotesSection({ notes, isAdmin, onSave, onDelete }) {
         )}
       </div>
 
-      <div className="overflow-x-auto border border-zinc-200">
+      <div className="overflow-x-auto schedule-panel-card">
         <table className="w-full text-sm font-body" data-testid="notes-table">
           <thead>
             <tr className="bg-zinc-50 text-left text-xs uppercase tracking-widest text-zinc-500">

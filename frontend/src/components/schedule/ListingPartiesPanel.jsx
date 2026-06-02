@@ -38,7 +38,7 @@ export default function ListingPartiesPanel({ propertySlug, listingParties, onSa
   }
 
   return (
-    <div className="bg-white border border-zinc-200 p-4 space-y-4 md:col-span-2" data-testid="listing-parties-panel">
+    <div className="schedule-panel-card p-4 space-y-4 md:col-span-2" data-testid="listing-parties-panel">
       <div>
         <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Parties on this transaction</p>
         <p className="text-sm text-zinc-600 font-body leading-snug mt-1">

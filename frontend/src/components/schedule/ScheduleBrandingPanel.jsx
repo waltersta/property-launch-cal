@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 
 const PRESETS = {
   listing: {
-    schedule_type_label: 'Listing schedule',
+    schedule_type_label: 'Transaction schedule',
     tagline: 'New Listing',
     create_property_label: 'New listing',
   },
@@ -62,7 +62,7 @@ export default function ScheduleBrandingPanel({
   }
 
   return (
-    <div className="bg-white border border-zinc-200 p-4 space-y-4 md:col-span-2" data-testid="schedule-branding-panel">
+    <div className="schedule-panel-card p-4 space-y-4 md:col-span-2" data-testid="schedule-branding-panel">
       <div>
         <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Hero labels</p>
         <p className="text-sm text-zinc-600 font-body leading-snug mt-1">
@@ -97,7 +97,7 @@ export default function ScheduleBrandingPanel({
             value={scheduleLabel}
             onChange={(e) => setScheduleLabel(e.target.value)}
             className="rounded-none mt-1"
-            placeholder="Listing schedule"
+            placeholder="Transaction schedule"
           />
         </div>
         <div>

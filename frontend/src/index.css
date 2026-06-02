@@ -51,7 +51,7 @@ body {
   padding: 0.4em 0.75em;
 }
 
-/* Section titles under each subhead (e.g. Prepare for market) */
+/* Section titles under each subhead (e.g. May & June 2026, Timeline) */
 .section-heading {
   font-family: 'Switzer', sans-serif;
   font-size: 1.125rem;
@@ -59,6 +59,22 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.08em;
   line-height: 1.35;
+}
+
+/* Stronger boxes for admin/settings sections (stone tint vs page white) */
+.schedule-panel {
+  border: 2px solid #a8a29e;
+  background-color: #f5f5f4;
+}
+
+.schedule-panel-card {
+  border: 2px solid #d6d3d1;
+  background-color: #ffffff;
+  box-shadow: 0 1px 3px 0 rgb(28 25 23 / 0.06);
+}
+
+.schedule-section-divider {
+  border-top: 4px solid #a8a29e;
 }
 
 .pill {

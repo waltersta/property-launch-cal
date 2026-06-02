@@ -1,4 +1,6 @@
-/** Guidance shown in Settings — matches layout in SchedulePage + index.css */
+/** Guidance shown in admin — matches layout in SchedulePage + index.css */
+
+export const BUILTIN_HEADER_PATH = '/header.png'
 
 export const HERO_IMAGE_SPEC = {
   title: 'Hero background',
@@ -14,12 +16,13 @@ export const HERO_IMAGE_SPEC = {
 
 export const HEADER_IMAGE_SPEC = {
   title: 'Header banner',
-  summary: 'Optional strip above the hero (logo, brokerage mark, or brand artwork).',
+  summary: 'Site-wide strip above the hero on every transaction (logo or brand bar). Stored once for the whole app.',
   specs: [
     'Size: 1024 × 76 px (13.5∶1 wide banner). Use 2048 × 152 px for sharper results on large screens.',
     'Orientation: very wide horizontal strip — not a square or portrait photo.',
     'Format: PNG with transparency for logos, or JPG for a flat photo banner.',
     'Content: brokerage logo, team mark, or simple brand bar; avoid small text (it will not scale up).',
-    'Leave blank to hide the header strip entirely.',
+    `Built-in default: ${BUILTIN_HEADER_PATH} (static file in the app, not in the database).`,
+    'Clearing the field and saving restores that default.',
   ],
 }

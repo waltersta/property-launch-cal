@@ -24,6 +24,16 @@ class Agent(Base):
     created_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
 
 
+class SiteBrand(Base):
+    """Singleton (id=1): site-wide header banner shared by every transaction."""
+
+    __tablename__ = "site_brand"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, default=1)
+    header_image_url: Mapped[str] = mapped_column(Text, default="/header.png")
+    updated_at: Mapped[str] = mapped_column(String(64), default=lambda: utcnow().isoformat())
+
+
 class PropertyConfig(Base):
     __tablename__ = "property_config"
 
@@ -32,7 +42,7 @@ class PropertyConfig(Base):
     property_slug: Mapped[str] = mapped_column(String(64), default="property", index=True)
     property_name: Mapped[str] = mapped_column(String(255), default="Property")
     tagline: Mapped[str] = mapped_column(String(255), default="New Listing")
-    schedule_type_label: Mapped[str] = mapped_column(String(128), default="Listing schedule")
+    schedule_type_label: Mapped[str] = mapped_column(String(128), default="Transaction schedule")
     create_property_label: Mapped[str] = mapped_column(String(128), default="New listing")
     schedule_email_intro: Mapped[str] = mapped_column(
         Text,

@@ -33,9 +33,13 @@ def _unique_slug(db: Session, base: str) -> str:
 def ensure_super_agent(db: Session) -> Agent:
     agent = db.query(Agent).filter(Agent.is_super_admin.is_(True)).first()
     if agent:
+        if agent.name == "Owner":
+            agent.name = "Agent"
+            db.commit()
+            db.refresh(agent)
         return agent
     agent = Agent(
-        name="Owner",
+        name="Agent",
         email="",
         invite_token=secrets.token_urlsafe(16),
         is_super_admin=True,
@@ -88,12 +92,12 @@ def create_trial_property(db: Session, agent: Agent) -> PropertyConfig:
         property_name=f"Sample listing — {first}",
         property_slug=slug,
         tagline="New Listing",
-        schedule_type_label="Listing schedule",
+        schedule_type_label="Transaction schedule",
         create_property_label="New listing",
         deal_type="listing",
         launch_date_label="",
         hero_image_url="",
-        header_image_url="/header.png",
+        header_image_url="",
         timezone="America/Los_Angeles",
         notifications_enabled=False,
         notify_email="",

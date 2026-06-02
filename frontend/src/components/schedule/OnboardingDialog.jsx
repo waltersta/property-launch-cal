@@ -12,7 +12,7 @@ const STEPS = [
   'Toggle Admin at the top to edit your trial listing.',
   'Add or edit events on the timeline, or drag events on the calendar to reschedule.',
   'Use Copy link or Send link (in Transaction admin) to share the client view.',
-  'Open Settings (05) for hero images and your New Event dropdown lists.',
+  'In Admin (04), set this listing’s hero image; in Settings (05), set the site header (super admin) and New Event lists.',
 ]
 
 export default function OnboardingDialog({ open, onOpenChange, agentName, onComplete }) {

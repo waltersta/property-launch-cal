@@ -6,10 +6,11 @@ from sqlalchemy.orm import Session
 
 from ..agent_service import ensure_super_agent
 from ..auth import assert_super_admin, create_admin_token, get_admin_context, require_admin, verify_passcode
+from ..site_brand import get_site_header_url, set_site_header_url
 from ..database import DATABASE_URL, get_db
 from ..db_migrate import sqlite_target
 from ..models import PropertyConfig
-from ..schemas import AdminVerifyIn, AdminVerifyOut
+from ..schemas import AdminVerifyIn, AdminVerifyOut, SiteBrandOut, SiteBrandUpdate
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -34,6 +35,23 @@ def _live_sqlite_path() -> Path:
             detail="Database is not SQLite; download/upload not supported.",
         )
     return target
+
+
+@router.get("/site-brand", response_model=SiteBrandOut)
+def get_site_brand(ctx=Depends(require_admin), db: Session = Depends(get_db)):
+    assert_super_admin(ctx)
+    return SiteBrandOut(header_image_url=get_site_header_url(db))
+
+
+@router.put("/site-brand", response_model=SiteBrandOut)
+def update_site_brand(
+    body: SiteBrandUpdate,
+    ctx=Depends(require_admin),
+    db: Session = Depends(get_db),
+):
+    assert_super_admin(ctx)
+    row = set_site_header_url(db, body.header_image_url)
+    return SiteBrandOut(header_image_url=get_site_header_url(db))
 
 
 @router.get("/db-download")

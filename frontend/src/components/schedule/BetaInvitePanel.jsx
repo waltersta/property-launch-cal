@@ -44,10 +44,10 @@ export default function BetaInvitePanel() {
   }
 
   return (
-    <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2" data-testid="beta-invite-panel">
-      <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Invite beta tester</p>
+    <div className="schedule-panel-card p-4 space-y-3 md:col-span-2" data-testid="beta-invite-panel">
+      <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Create link</p>
       <p className="text-sm text-zinc-600 font-body leading-snug">
-        Creates a private trial listing with sample events. Send the invite link — no setup on your side.
+        Creates a private trial listing with sample events. Copy the link and send it — no email is sent from the app.
       </p>
       <form onSubmit={submit} className="grid sm:grid-cols-2 gap-3">
         <div>
@@ -80,7 +80,7 @@ export default function BetaInvitePanel() {
             disabled={submitting}
           >
             <UserPlus className="h-3.5 w-3.5 mr-1.5" />
-            {submitting ? 'Creating…' : 'Invite beta tester'}
+            {submitting ? 'Creating link…' : 'Create link'}
           </Button>
         </div>
       </form>

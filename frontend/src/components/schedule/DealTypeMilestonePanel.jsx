@@ -35,7 +35,7 @@ export default function DealTypeMilestonePanel({ propertySlug, dealType: dealTyp
   }
 
   return (
-    <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2">
+    <div className="schedule-panel-card p-4 space-y-3 md:col-span-2">
       <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Deal type &amp; milestone</p>
       <p className="text-sm text-zinc-600 font-body leading-snug">
         The hero line shows <strong>Going live</strong> from a <strong>Listing live</strong> event, or{' '}
@@ -61,7 +61,7 @@ export default function DealTypeMilestonePanel({ propertySlug, dealType: dealTyp
           Purchase
         </Button>
       </div>
-      <p className="text-sm font-body text-zinc-700 border border-zinc-100 bg-zinc-50 px-3 py-2">
+      <p className="text-sm font-body text-zinc-700 border-2 border-stone-200 bg-stone-50 px-3 py-2">
         {milestonePreview ? (
           <>
             Hero preview: <strong>{milestonePreview.label}</strong> {milestonePreview.dateLabel}

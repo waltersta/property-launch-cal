@@ -85,6 +85,8 @@ Add in Render environment: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD
 
 ## Local development
 
+From the repo root you can run `npm run dev` (frontend on port 5173) and `npm run dev:api` (API on port 8000) in two terminals.
+
 ### Backend
 
 ```bash
@@ -168,7 +170,6 @@ Each listing has a `property_slug` in config (Rainbow Drive → `rainbow-drive`)
 - `POST /api/admin/verify` — `{ passcode }` → `{ valid, admin_token }`
 - `POST /api/events/import/parse` — convert pasted email or screenshot to draft events (admin)
 - `POST /api/events/import/apply` — create events from import preview (admin)
-- Admin routes require header `X-Admin-Token`
 
 ## Verification checklist
 

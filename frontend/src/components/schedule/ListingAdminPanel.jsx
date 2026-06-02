@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import BetaInvitePanel from '@/components/schedule/BetaInvitePanel'
 import DealTypeMilestonePanel from '@/components/schedule/DealTypeMilestonePanel'
+import ListingHeroPanel from '@/components/schedule/ListingHeroPanel'
 import ListingPartiesPanel from '@/components/schedule/ListingPartiesPanel'
 import {
   composeScheduleEmail,
@@ -27,6 +28,7 @@ async function copyText(url, label) {
 export default function ListingAdminPanel({
   propertySlug,
   propertyName,
+  config,
   dealType,
   events,
   listingParties,
@@ -91,7 +93,7 @@ export default function ListingAdminPanel({
   const pick = links?.pick_links?.[0]
 
   return (
-    <div className="border border-zinc-200 bg-zinc-50 p-4 sm:p-5" data-testid="listing-admin-panel">
+    <div className="schedule-panel p-4 sm:p-5" data-testid="listing-admin-panel">
       <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4">
         <div>
           <p className="overline text-zinc-500 mb-0.5">Transaction admin</p>
@@ -103,6 +105,7 @@ export default function ListingAdminPanel({
       </div>
 
       <div className="grid md:grid-cols-2 gap-4">
+        <ListingHeroPanel propertySlug={propertySlug} config={config} onSaved={onPartiesSaved} />
         {isSuperAdmin ? <BetaInvitePanel /> : null}
         <DealTypeMilestonePanel
           propertySlug={propertySlug}
@@ -115,7 +118,7 @@ export default function ListingAdminPanel({
           listingParties={listingParties}
           onSaved={onPartiesSaved}
         />
-        <div className="bg-white border border-zinc-200 p-4 space-y-3">
+        <div className="schedule-panel-card p-4 space-y-3">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Client passcode</p>
           <p className="text-sm text-zinc-600 font-body leading-snug">
             Optional lock on the share link. Save blank to remove.
@@ -144,7 +147,7 @@ export default function ListingAdminPanel({
           </Button>
         </div>
 
-        <div className="bg-white border border-zinc-200 p-4 space-y-3 md:col-span-2">
+        <div className="schedule-panel-card p-4 space-y-3 md:col-span-2">
           <p className="text-xs uppercase tracking-widest text-zinc-500 font-medium">Link for client</p>
           <p className="text-sm text-zinc-600 font-body leading-snug">
             <strong>Schedule link</strong> — opens an email draft to all client emails with the full calendar link.
